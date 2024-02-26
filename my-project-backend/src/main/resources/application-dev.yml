@@ -1,0 +1,47 @@
+# 开发环境配置
+springdoc:
+  paths-to-match: /api/**
+  swagger-ui:
+    operations-sorter: alpha
+spring:
+  mail:
+    host: smtp.163.com
+    username: maplechenx@163.com
+    password: IADEWGWLLANKMJGJ
+  rabbitmq:
+    addresses: localhost
+    username: admin
+    password: admin
+    virtual-host: /
+  datasource:
+    url: jdbc:mysql://localhost:3306/projj
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  security:
+    jwt:
+      key: 'MapleChenX'
+      expire: 72
+      limit:
+        base: 10
+        upgrade: 300
+        frequency: 30
+    filter:
+      order: -100
+  web:
+    verify:
+      mail-limit: 60
+    flow:
+      period: 300
+      limit: 500
+      block: 1
+    cors:
+      origin: '*'
+      credentials: false
+      methods: '*'
+  minio:
+    endpoint: 'http://localhost:9000'
+    username: 'minioadmin'
+    password: 'minioadmin'
+  weather:
+    key: 7abbc24d3b4443b597a3b3c676e0f221
