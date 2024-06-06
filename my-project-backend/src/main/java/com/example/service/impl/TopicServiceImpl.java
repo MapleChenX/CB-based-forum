@@ -122,7 +122,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         if(!textLimitCheck(JSONObject.parseObject(vo.getContent()), 2000))
             return "评论内容太多，发表失败！";
         String key = Const.FORUM_TOPIC_COMMENT_COUNTER + uid;
-        if(!flowUtils.limitPeriodCounterCheck(key, 2, 60))
+        if(!flowUtils.limitPeriodCounterCheck(key, 20, 60))
             return "发表评论频繁，请稍后再试！";
 
         TopicComment comment = new TopicComment();

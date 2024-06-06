@@ -48,7 +48,7 @@ public class ForumController {
                 .toList());
     }
 
-    @PostMapping("/create-topic")
+    @PostMapping("/create-topic") //帖子数据是个JSON，图片url也在其中
     public RestBean<Void> createTopic(@Valid @RequestBody TopicCreateVO vo,
                                       @RequestAttribute(Const.ATTR_USER_ID) int id) {
         return utils.messageHandle(() -> topicService.createTopic(id, vo));

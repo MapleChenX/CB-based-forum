@@ -56,7 +56,7 @@ public class JwtUtils {
         JWTVerifier jwtVerifier = JWT.require(algorithm).build();
         try {
             DecodedJWT verify = jwtVerifier.verify(token);
-            return deleteToken(verify.getId(), verify.getExpiresAt());
+            return deleteToken(verify.getId(), verify.getExpiresAt()); //删除token
         } catch (JWTVerificationException e) {
             return false;
         }

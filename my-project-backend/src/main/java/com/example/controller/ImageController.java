@@ -13,7 +13,7 @@ import java.io.IOException;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/image")
+@RequestMapping("/api/image") //图片上传controller
 public class ImageController {
 
     @Resource

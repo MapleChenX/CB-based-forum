@@ -62,6 +62,8 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
+    const lo = console.log.bind(console)
+    lo(to, from)
     const isUnauthorized = unauthorized()
     if(to.name.startsWith('welcome') && !isUnauthorized) {
         next('/index')

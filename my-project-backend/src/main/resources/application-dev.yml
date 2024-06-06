@@ -3,6 +3,8 @@ springdoc:
   paths-to-match: /api/**
   swagger-ui:
     operations-sorter: alpha
+
+
 spring:
   mail:
     host: smtp.163.com
@@ -10,13 +12,16 @@ spring:
     password: IADEWGWLLANKMJGJ
   rabbitmq:
     addresses: localhost
-    username: admin
-    password: admin
+#    username: admin
+    username: guest
+#    password: admin
+    password: guest
     virtual-host: /
   datasource:
-    url: jdbc:mysql://localhost:3306/projj
+#    url: jdbc:mysql://localhost:3306/projj
+    url: jdbc:mysql://localhost:3306/forum
     username: root
-    password: root
+    password: 111111
     driver-class-name: com.mysql.cj.jdbc.Driver
   security:
     jwt:
@@ -38,7 +43,7 @@ spring:
     cors:
       origin: '*'
       credentials: false
-      methods: '*'
+      methods: 'GET, POST'
   minio:
     endpoint: 'http://localhost:9000'
     username: 'minioadmin'
