@@ -21,6 +21,7 @@ import com.example.utils.Const;
 import com.example.utils.FlowUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements TopicService {
 
     @Resource
@@ -63,6 +65,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     NotificationService notificationService;
 
     private Set<Integer> types = null;
+
     // @PostConstruct 是一个Java注解，它表示该注解修饰的方法会在依赖注入完成后，且在类的构造函数执行后立即执行。这个注解通常用于进行一些初始化操作。
     @PostConstruct
     private void initTypes() {
@@ -80,20 +83,20 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Override
     public String createTopic(int uid, TopicCreateVO vo) {
-        if(!textLimitCheck(vo.getContent(), 20000))
+        if (!textLimitCheck(vo.getContent(), 20000))
             return "文章内容太多，发文失败！";
-        if(!types.contains(vo.getType()))
+        if (!types.contains(vo.getType()))
             return "文章类型非法！";
         String key = Const.FORUM_TOPIC_CREATE_COUNTER + uid;
         // 十分钟能发100篇文章
-        if(!flowUtils.limitPeriodCounterCheck(key, 100, 600))
+        if (!flowUtils.limitPeriodCounterCheck(key, 100, 600))
             return "发文频繁，请稍后再试！";
         Topic topic = new Topic();
         BeanUtils.copyProperties(vo, topic);
         topic.setContent(vo.getContent().toJSONString());
         topic.setUid(uid);
         topic.setTime(new Date());
-        if(this.save(topic)) {
+        if (this.save(topic)) {
             cacheUtils.deleteCachePattern(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
             return null;
         } else {
@@ -103,9 +106,9 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Override
     public String updateTopic(int uid, TopicUpdateVO vo) {
-        if(!textLimitCheck(vo.getContent(), 20000))
+        if (!textLimitCheck(vo.getContent(), 20000))
             return "文章内容太多，发文失败！";
-        if(!types.contains(vo.getType()))
+        if (!types.contains(vo.getType()))
             return "文章类型非法！";
         baseMapper.update(null, Wrappers.<Topic>update()
                 .eq("uid", uid)
@@ -119,10 +122,10 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Override
     public String createComment(int uid, AddCommentVO vo) {
-        if(!textLimitCheck(JSONObject.parseObject(vo.getContent()), 2000))
+        if (!textLimitCheck(JSONObject.parseObject(vo.getContent()), 50000))
             return "评论内容太多，发表失败！";
         String key = Const.FORUM_TOPIC_COMMENT_COUNTER + uid;
-        if(!flowUtils.limitPeriodCounterCheck(key, 20, 60))
+        if (!flowUtils.limitPeriodCounterCheck(key, 20, 1))
             return "发表评论频繁，请稍后再试！";
 
         TopicComment comment = new TopicComment();
@@ -136,24 +139,24 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         // 拿到自己的信息
         Account account = accountMapper.selectById(uid);
         // 有引用才需要通知人家（引用就是回复人家的评论）
-        if(vo.getQuote() > 0) {
+        if (vo.getQuote() > 0) {
             // 拿到被引用的评论
             TopicComment com = commentMapper.selectById(vo.getQuote());
             // 被引用的评论不是自己的，就通知
-            if(!Objects.equals(account.getId(), com.getUid())) {
+            if (!Objects.equals(account.getId(), com.getUid())) {
                 notificationService.addNotification( // 回复评论
                         com.getUid(),
                         "您有新的帖子评论回复",
-                        account.getUsername()+" 回复了你发表的评论，快去看看吧！",
-                        "success", "/index/topic-detail/"+com.getTid()
+                        account.getUsername() + " 回复了你发表的评论，快去看看吧！",
+                        "success", "/index/topic-detail/" + com.getTid()
                 );
             }
         } else if (!Objects.equals(account.getId(), topic.getUid())) { // 回复帖子
             notificationService.addNotification(
                     topic.getUid(),
                     "您有新的帖子回复",
-                    account.getUsername()+" 回复了你发表主题: "+topic.getTitle()+"，快去看看吧！",
-                    "success", "/index/topic-detail/"+topic.getId()
+                    account.getUsername() + " 回复了你发表主题: " + topic.getTitle() + "，快去看看吧！",
+                    "success", "/index/topic-detail/" + topic.getId()
             );
         }
         return null;
@@ -169,16 +172,17 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             CommentVO vo = new CommentVO();
             BeanUtils.copyProperties(dto, vo);
 
-            if(dto.getQuote() > 0) { // 默认-1表示没有引用
+            if (dto.getQuote() > 0) { // 默认-1表示没有引用
                 // 从数据库查询引用的那个评论
                 TopicComment comment = commentMapper.selectOne(Wrappers.<TopicComment>query()
                         .eq("id", dto.getQuote()).orderByAsc("time"));
 
                 // 处理数据库的信息，回显的vo中的quote字段是一个字符串，它的值是引用的评论的文字内容
-                if(comment != null) {
+                if (comment != null) {
                     JSONObject object = JSONObject.parseObject(comment.getContent());
                     StringBuilder builder = new StringBuilder();
-                    this.shortContent(object.getJSONArray("ops"), builder, ignore -> {});
+                    this.shortContent(object.getJSONArray("ops"), builder, ignore -> {
+                    });
                     vo.setQuote(builder.toString());
                 } else {
                     vo.setQuote("此评论已被删除");
@@ -218,23 +222,25 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         // 从缓存中获取list
         List<TopicPreviewVO> list = cacheUtils.takeListFromCache(key, TopicPreviewVO.class);
         // 如果缓存中有，直接返回
-        if(list != null)
+        if (list != null)
             return list;
         // 创建分页对象
         Page<Topic> page = Page.of(pageNumber, 10);
         // 根据类型查询
-        if(type == 0)
+        if (type == 0) {
             baseMapper.selectPage(page, Wrappers.<Topic>query().orderByDesc("time"));
-        else
+        } else {
             baseMapper.selectPage(page, Wrappers.<Topic>query().eq("type", type).orderByDesc("time"));
+        }
         // 获取分页数据
         List<Topic> topics = page.getRecords();
+        log.info("从数据库中获取数据 {} 条, {}", topics.size(), topics);
         // 如果没有数据，返回null
-        if(topics.isEmpty()) return null;
+        if (topics.isEmpty()) return null;
         // 数据处理部分，将分页数据转换为Preview对象
         list = topics.stream().map(this::resolveToPreview).toList();
         // 将Preview对象存入缓存
-        cacheUtils.saveListToCache(key, list, 60);
+        cacheUtils.saveListToCache(key, list, 3);
         return list;
     }
 
@@ -295,20 +301,22 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     }
 
     // 首先，它定义了一个名为state的HashMap，用于存储每种类型的交互是否已经有一个待执行的延迟任务
-    private final Map<String, Boolean> state = new HashMap<>();
+    private static final Map<String, Boolean> state = new HashMap<>();
     // 然后，它定义了一个名为service的ScheduledExecutorService，用于执行延迟任务
     ScheduledExecutorService service = Executors.newScheduledThreadPool(2);
+
     // 保存交互调度
     private void saveInteractSchedule(String type) {
         // 如果没有延迟任务
-        if(!state.getOrDefault(type, false)) {
+        if (!state.getOrDefault(type, false)) {
             // 就添加一个新的延迟任务
             state.put(type, true);
-
+            log.info("添加保存交互调度 {}", new Date().toString());
             // 3秒后执行保存操作
             service.schedule(() -> {
                 this.saveInteract(type);
                 state.put(type, false);
+                log.info("保存交互信息成功 {}", new Date().toString());
             }, 3, TimeUnit.SECONDS);
         }
     }
@@ -323,22 +331,22 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             // 遍历redis获取点赞等信息
             // type是交互类型，k是用户与帖子的交互id，v是交互状态（点赞还是取消点赞）
             template.opsForHash().entries(type).forEach((k, v) -> {
-                if(Boolean.parseBoolean(v.toString()))
+                if (Boolean.parseBoolean(v.toString()))
                     check.add(Interact.parseInteract(k.toString(), type));
                 else
                     uncheck.add(Interact.parseInteract(k.toString(), type));
             });
 
             // 添加还是删除交互
-            if(!check.isEmpty())
+            if (!check.isEmpty())
                 baseMapper.addInteract(check, type);
-            if(!uncheck.isEmpty())
+            if (!uncheck.isEmpty())
                 baseMapper.deleteInteract(uncheck, type);
             template.delete(type);
         }
     }
 
-    private <T> T fillUserDetailsByPrivacy(T target, int uid){
+    private <T> T fillUserDetailsByPrivacy(T target, int uid) {
         AccountDetails details = accountDetailsMapper.selectById(uid);
         Account account = accountMapper.selectById(uid);
         AccountPrivacy accountPrivacy = accountPrivacyMapper.selectById(uid);
@@ -372,15 +380,15 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     // 数据库数据
     // {"ops":[{"insert":{"image":"http://localhost:8080/images/cache/20231103/f1915a87311d40beb9926c16c41f8230"}},{"insert":"\n"},{"insert":{"image":"http://localhost:8080/images/cache/20231103/9912f6aed02c4ca6950c4d17f5ff7e83"}},{"insert":"\n\n"}]}
-    private void shortContent(JSONArray ops, StringBuilder previewText, Consumer<Object> imageHandler){
+    private void shortContent(JSONArray ops, StringBuilder previewText, Consumer<Object> imageHandler) {
         for (Object op : ops) {
             Object insert = JSONObject.from(op).get("insert");
             // 通过判断类型来得知是图片还是文字
             // 这行代码检查 "insert" 键对应的值是否是一个字符串。如果是，那么它将这个值赋给 text。
-            if(insert instanceof String text) {
-                if(previewText.length() >= 300) continue;
+            if (insert instanceof String text) {
+                if (previewText.length() >= 300) continue;
                 previewText.append(text);
-            } else if(insert instanceof Map<?, ?> map) {
+            } else if (insert instanceof Map<?, ?> map) {
                 // map.get("image")不存在就返回空，存在就在imageHandler中处理
                 Optional.ofNullable(map.get("image")).ifPresent(imageHandler);
             }
@@ -388,11 +396,11 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     }
 
     private boolean textLimitCheck(JSONObject object, int max) {
-        if(object == null) return false;
+        if (object == null) return false;
         long length = 0;
         for (Object op : object.getJSONArray("ops")) {
             length += JSONObject.from(op).getString("insert").length();
-            if(length > max) return false;
+            if (length > max) return false;
         }
         return true;
     }

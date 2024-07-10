@@ -49,4 +49,4 @@ spring:
     username: 'minioadmin'
     password: 'minioadmin'
   weather:
-    key: 7abbc24d3b4443b597a3b3c676e0f221
+    key: 16eb85939a3249589fce78da9a93c3fa
