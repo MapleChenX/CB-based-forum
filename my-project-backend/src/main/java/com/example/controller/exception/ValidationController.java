@@ -32,7 +32,7 @@ public class ValidationController {
 //            return RestBean.failure(400, "请求参数有误");
 //        }else {
 //            log.warn("Resolved [{}: {}]", exception.getClass().getName(), exception.getMessage());
-//            return RestBean.failure(400, "干你的亲妈");
+//            return RestBean.failure(400, "nothing");
 //        }
 //    }
 

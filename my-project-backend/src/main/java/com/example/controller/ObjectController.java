@@ -2,7 +2,6 @@ package com.example.controller;
 
 import com.example.entity.RestBean;
 import com.example.service.ImageService;
-import io.minio.GetObjectArgs;
 import io.minio.errors.ErrorResponseException;
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletOutputStream;
@@ -12,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.OutputStream;
 
 @Slf4j
 @RestController

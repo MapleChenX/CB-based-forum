@@ -5,7 +5,6 @@ import com.example.entity.dto.Account;
 import com.example.entity.dto.Topic;
 import com.example.service.AdminService;
 import jakarta.annotation.Resource;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 

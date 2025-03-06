@@ -3,14 +3,12 @@ package com.example;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.entity.dto.Topic;
-import com.example.entity.dto.TopicComment;
 import com.example.mapper.TopicMapper;
-import com.example.service.TopicService;
+import com.huaban.analysis.jieba.JiebaSegmenter;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 
@@ -34,5 +32,13 @@ class MyProjectBackendApplicationTests {
         List<Topic> records = page.getRecords();
         records.forEach(System.out::println);
 
+    }
+
+    @Test
+    public void testJiebaSegmenter() {
+        JiebaSegmenter segmenter = new JiebaSegmenter();
+        String text = "我来到北京清华大学, so, what's up? nice to meet u everybody!";
+        List<String> segmentedText = segmenter.sentenceProcess(text);
+        System.out.println(segmentedText);
     }
 }

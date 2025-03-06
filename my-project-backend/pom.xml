@@ -102,6 +102,12 @@
             <artifactId>minio</artifactId>
             <version>8.3.9</version>
         </dependency>
+        <!--    分词器    -->
+        <dependency>
+            <groupId>com.huaban</groupId>
+            <artifactId>jieba-analysis</artifactId>
+            <version>1.0.2</version>
+        </dependency>
     </dependencies>
 
     <profiles>

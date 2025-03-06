@@ -30,9 +30,9 @@ import java.util.Map;
  * Swagger开发文档相关配置
  */
 @Configuration
-@SecurityScheme(type = SecuritySchemeType.HTTP, scheme = "Bearer",
-        name = "Authorization", in = SecuritySchemeIn.HEADER)
-@OpenAPIDefinition(security = { @SecurityRequirement(name = "Authorization") })
+@SecurityScheme(in = SecuritySchemeIn.HEADER, name = "Authorization",
+        type = SecuritySchemeType.HTTP, scheme = "Bearer")
+@OpenAPIDefinition(security = { @SecurityRequirement(name = "Authorization") }) // 自动给接口请求添加认证
 public class SwaggerConfiguration {
 
     /**
@@ -42,17 +42,13 @@ public class SwaggerConfiguration {
     @Bean
     public OpenAPI springShopOpenAPI() {
         return new OpenAPI()
-                .info(new Info().title("示例项目 API 文档")
+                .info(new Info().title("校园论坛 API 文档")
                         .description("欢迎来到本示例项目API测试文档，在这里可以快速进行接口调试")
                         .version("1.0")
-                        .license(new License()
-                                .name("项目开源地址")
-                                .url("https://github.com/Ketuer/SpringBoot-Vue-Template-Jwt")
-                        )
                 )
                 .externalDocs(new ExternalDocumentation()
-                        .description("我们的官方网站")
-                        .url("https://itbaima.net")
+                        .description("项目开源地址")
+                        .url("https://github.com/MapleChenX/forum-jwt")
                 );
     }
 
@@ -78,10 +74,12 @@ public class SwaggerConfiguration {
                         .addParametersItem(new QueryParameter()
                                 .name("username")
                                 .required(true)
+                                .content(new Content().addMediaType("application/json", new MediaType()))
                         )
                         .addParametersItem(new QueryParameter()
                                 .name("password")
                                 .required(true)
+                                .content(new Content().addMediaType("application/json", new MediaType()))
                         )
                         .responses(new ApiResponses()
                                 .addApiResponse("200", new ApiResponse()

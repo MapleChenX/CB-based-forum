@@ -3,6 +3,7 @@ package com.example.filter;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.utils.Const;
 import com.example.utils.JwtUtils;
+import com.example.utils.UserHolder;
 import jakarta.annotation.Resource;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -35,6 +36,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         DecodedJWT jwt = utils.resolveJwt(authorization); // 做了失效验证
         if(jwt != null) {
             UserDetails user = utils.toUser(jwt);
+            // 载入UserHolder
+            UserHolder.set(utils.toId(jwt));
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
