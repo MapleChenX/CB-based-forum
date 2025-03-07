@@ -15,8 +15,13 @@ public class RecommendServiceImpl implements RecommendService {
     @Resource
     ContentBasedRecommendationModel contentBasedRecommendationModel;
 
-    public List<Integer> similarRecommend(Integer uid, Integer topicId){
-        return contentBasedRecommendationModel.recommendPosts(uid, topicId);
+    public List<Integer> similarRecommend(Integer uid){
+        return contentBasedRecommendationModel.recommendPosts(uid);
+    }
+
+    @Override
+    public List<Integer> recommendSimilarPosts(Integer uid, Integer topicId) {
+        return contentBasedRecommendationModel.recommendSimilarPosts(uid, topicId);
     }
 
 }
