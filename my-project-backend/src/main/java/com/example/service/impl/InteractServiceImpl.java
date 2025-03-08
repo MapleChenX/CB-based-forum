@@ -41,14 +41,14 @@ public class InteractServiceImpl implements InteractService {
     @Override
     public List<Interact> getUserLikes(Integer uid) {
         return interactMapper.getUserLikes(uid).stream()
-                .peek(e -> e.setType("like"))
+                .map(e -> new Interact(e.getTid(), e.getUid(), e.getTime(), "like"))
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<Interact> getUserCollects(Integer uid) {
         return interactMapper.getUserCollects(uid).stream()
-                .peek(e -> e.setType("collect"))
+                .map(e -> new Interact(e.getTid(), e.getUid(), e.getTime(), "collect"))
                 .collect(Collectors.toList());
     }
 

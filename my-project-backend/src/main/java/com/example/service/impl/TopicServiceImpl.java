@@ -356,7 +356,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         return target;
     }
 
-    private TopicPreviewVO resolveToPreview(Topic topic) {
+    public TopicPreviewVO resolveToPreview(Topic topic) {
         TopicPreviewVO vo = new TopicPreviewVO();
         BeanUtils.copyProperties(accountMapper.selectById(topic.getUid()), vo);
         BeanUtils.copyProperties(topic, vo);

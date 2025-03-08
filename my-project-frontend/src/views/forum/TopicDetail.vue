@@ -3,7 +3,18 @@ import {useRoute} from "vue-router";
 import {get, post} from "@/net";
 import axios from "axios";
 import {computed, reactive, ref} from "vue";
-import {ArrowLeft, ChatSquare, CircleCheck, Delete, EditPen, Female, Male, Plus, Star} from "@element-plus/icons-vue";
+import {
+    ArrowLeft,
+    ChatSquare,
+    CircleCheck,
+    Clock, Close,
+    Delete,
+    EditPen,
+    Female,
+    Male,
+    Plus,
+    Star, Top
+} from "@element-plus/icons-vue";
 import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
 import Card from "@/components/Card.vue";
 import router from "@/router";
@@ -13,6 +24,8 @@ import {ElMessage} from "element-plus";
 import {useStore} from "@/store";
 import TopicEditor from "@/components/TopicEditor.vue";
 import TopicCommentEditor from "@/components/TopicCommentEditor.vue";
+import RecommendationCard from "@/components/RecommendationCard.vue";
+import LightCard from "@/components/LightCard.vue";
 
 const route = useRoute()
 const store = useStore()
@@ -32,6 +45,17 @@ const comment = reactive({
     text: '',
     quote: null
 })
+
+const topics = reactive({
+    list: []
+})
+
+const getSimilarRecommendation = () => {
+    get(`/api/recommend/similar/${tid}`, data => {
+        topics.list = data
+    })
+}
+getSimilarRecommendation()
 
 const init = () => get(`api/forum/topic?tid=${tid}`, data => {
     topic.data = data
@@ -90,120 +114,159 @@ function deleteComment(id) {
 </script>
 
 <template>
-    <div class="topic-page" v-if="topic.data">
-        <div class="topic-main" style="position: sticky;top: 0;z-index: 10">
-            <card style="display: flex;width: 100%;">
-                <el-button :icon="ArrowLeft" type="info" size="small"
-                           plain round @click="router.push('/index')">返回列表</el-button>
-                <div style="text-align: center;flex: 1">
-                    <topic-tag :type="topic.data.type"/>
-                    <span style="font-weight: bold;margin-left: 5px">{{topic.data.title}}</span>
-                </div>
-            </card>
-        </div>
-        <div class="topic-main">
-            <div class="topic-main-left">
-                <el-avatar :src="store.avatarUserUrl(topic.data.user.avatar)" :size="60"/>
-                <div>
-                    <div style="font-size: 18px;font-weight: bold">
-                        {{topic.data.user.username}}
-                        <span style="color: hotpink" v-if="topic.data.user.gender === 1">
-                            <el-icon><Female/></el-icon>
-                        </span>
-                        <span style="color: dodgerblue" v-if="topic.data.user.gender === 0">
-                            <el-icon><Male/></el-icon>
-                        </span>
+    <div class="frame" v-if="topic.data" style="max-width: 1200px;display: flex">
+        <div class="topic-page" v-if="topic.data">
+            <div class="topic-main" style="position: sticky;top: 0;z-index: 10">
+                <card style="display: flex;width: 100%;">
+                    <el-button :icon="ArrowLeft" type="info" size="small"
+                               plain round @click="router.push('/index')">返回列表</el-button>
+                    <div style="text-align: center;flex: 1">
+                        <topic-tag :type="topic.data.type"/>
+                        <span style="font-weight: bold;margin-left: 5px">{{topic.data.title}}</span>
                     </div>
-                    <div class="desc">{{topic.data.user.email}}</div>
-                </div>
-                <el-divider style="margin: 10px 0"/>
-                <div style="text-align: left;margin: 0 5px">
-                    <div class="desc">微信号: {{topic.data.user.wx || '已隐藏或未填写'}}</div>
-                    <div class="desc">QQ号: {{topic.data.user.qq || '已隐藏或未填写'}}</div>
-                    <div class="desc">手机号: {{topic.data.user.phone || '已隐藏或未填写'}}</div>
-                </div>
-                <el-divider style="margin: 10px 0"/>
-                <div class="desc" style="margin: 0 5px">{{topic.data.user.desc}}</div>
+                </card>
             </div>
-            <div class="topic-main-right">
-                <div class="topic-content" v-html="convertToHtml(topic.data.content)"></div>
-                <el-divider/>
-                <div style="font-size: 13px;color: grey;text-align: center">
-                    <div>发帖时间: {{new Date(topic.data.time).toLocaleString()}}</div>
+            <div class="topic-main">
+                <div class="topic-main-left">
+                    <el-avatar :src="store.avatarUserUrl(topic.data.user.avatar)" :size="60"/>
+                    <div>
+                        <div style="font-size: 18px;font-weight: bold">
+                            {{topic.data.user.username}}
+                            <span style="color: hotpink" v-if="topic.data.user.gender === 1">
+                                <el-icon><Female/></el-icon>
+                            </span>
+                            <span style="color: dodgerblue" v-if="topic.data.user.gender === 0">
+                                <el-icon><Male/></el-icon>
+                            </span>
+                        </div>
+                        <div class="desc">{{topic.data.user.email}}</div>
+                    </div>
+                    <el-divider style="margin: 10px 0"/>
+                    <div style="text-align: left;margin: 0 5px">
+                        <div class="desc">微信号: {{topic.data.user.wx || '已隐藏或未填写'}}</div>
+                        <div class="desc">QQ号: {{topic.data.user.qq || '已隐藏或未填写'}}</div>
+                        <div class="desc">手机号: {{topic.data.user.phone || '已隐藏或未填写'}}</div>
+                    </div>
+                    <el-divider style="margin: 10px 0"/>
+                    <div class="desc" style="margin: 0 5px">{{topic.data.user.desc}}</div>
                 </div>
-                <div style="text-align: right;margin-top: 30px">
-                    <interact-button name="编辑帖子" color="dodgerblue" :check="false"
-                                     @check="edit = true" style="margin-right: 20px"
-                                     v-if="store.user.id === topic.data.user.id">
-                        <el-icon><EditPen/></el-icon>
-                    </interact-button>
-                    <interact-button name="点个赞吧" check-name="已点赞" color="pink" :check="topic.like"
-                                     @check="interact('like', '点赞')">
-                        <el-icon><CircleCheck/></el-icon>
-                    </interact-button>
-                    <interact-button name="收藏本帖" check-name="已收藏" color="orange" :check="topic.collect"
-                                     @check="interact('collect', '收藏')"
-                                     style="margin-left: 20px">
-                        <el-icon><Star/></el-icon>
-                    </interact-button>
+                <div class="topic-main-right">
+                    <div class="topic-content" v-html="convertToHtml(topic.data.content)"></div>
+                    <el-divider/>
+                    <div style="font-size: 13px;color: grey;text-align: center">
+                        <div>发帖时间: {{new Date(topic.data.time).toLocaleString()}}</div>
+                    </div>
+                    <div style="text-align: right;margin-top: 30px">
+                        <interact-button name="编辑帖子" color="dodgerblue" :check="false"
+                                         @check="edit = true" style="margin-right: 20px"
+                                         v-if="store.user.id === topic.data.user.id">
+                            <el-icon><EditPen/></el-icon>
+                        </interact-button>
+                        <interact-button name="点个赞吧" check-name="已点赞" color="pink" :check="topic.like"
+                                         @check="interact('like', '点赞')">
+                            <el-icon><CircleCheck/></el-icon>
+                        </interact-button>
+                        <interact-button name="收藏本帖" check-name="已收藏" color="orange" :check="topic.collect"
+                                         @check="interact('collect', '收藏')"
+                                         style="margin-left: 20px">
+                            <el-icon><Star/></el-icon>
+                        </interact-button>
+                    </div>
                 </div>
             </div>
-        </div>
-        <transition name="el-fade-in-linear" mode="out-in">
-            <div v-if="topic.comments">
-                <div class="topic-main" style="margin-top: 10px" v-for="item in topic.comments">
-                    <div class="topic-main-left">
-                        <el-avatar :src="store.avatarUserUrl(item.user.avatar)" :size="60"/>
-                        <div>
-                            <div style="font-size: 18px;font-weight: bold">
-                                {{item.user.username}}
-                                <span style="color: hotpink" v-if="item.user.gender === 1">
-                            <el-icon><Female/></el-icon>
-                        </span>
-                                <span style="color: dodgerblue" v-if="item.user.gender === 0">
-                            <el-icon><Male/></el-icon>
-                        </span>
+            <transition name="el-fade-in-linear" mode="out-in">
+                <div v-if="topic.comments">
+                    <div class="topic-main" style="margin-top: 10px" v-for="item in topic.comments">
+                        <div class="topic-main-left">
+                            <el-avatar :src="store.avatarUserUrl(item.user.avatar)" :size="60"/>
+                            <div>
+                                <div style="font-size: 18px;font-weight: bold">
+                                    {{item.user.username}}
+                                    <span style="color: hotpink" v-if="item.user.gender === 1">
+                                <el-icon><Female/></el-icon>
+                            </span>
+                                    <span style="color: dodgerblue" v-if="item.user.gender === 0">
+                                <el-icon><Male/></el-icon>
+                            </span>
+                                </div>
+                                <div class="desc">{{item.user.email}}</div>
                             </div>
-                            <div class="desc">{{item.user.email}}</div>
+                            <el-divider style="margin: 10px 0"/>
+                            <div style="text-align: left;margin: 0 5px">
+                                <div class="desc">微信号: {{item.user.wx || '已隐藏或未填写'}}</div>
+                                <div class="desc">QQ号: {{item.user.qq || '已隐藏或未填写'}}</div>
+                                <div class="desc">手机号: {{item.user.phone || '已隐藏或未填写'}}</div>
+                            </div>
                         </div>
-                        <el-divider style="margin: 10px 0"/>
-                        <div style="text-align: left;margin: 0 5px">
-                            <div class="desc">微信号: {{item.user.wx || '已隐藏或未填写'}}</div>
-                            <div class="desc">QQ号: {{item.user.qq || '已隐藏或未填写'}}</div>
-                            <div class="desc">手机号: {{item.user.phone || '已隐藏或未填写'}}</div>
+                        <div class="topic-main-right">
+                            <div style="font-size: 13px;color: grey">
+                                <div>评论时间: {{new Date(item.time).toLocaleString()}}</div>
+                            </div>
+                            <div v-if="item.quote" class="comment-quote">
+                                回复: {{item.quote}}
+                            </div>
+                            <div class="topic-content" v-html="convertToHtml(item.content)"></div>
+                            <div style="text-align: right">
+                                <el-link :icon="ChatSquare" @click="comment.show = true;comment.quote = item"
+                                         type="info">&nbsp;回复评论</el-link>
+                                <el-link :icon="Delete" type="danger" v-if="item.user.id === store.user.id"
+                                         style="margin-left: 20px" @click="deleteComment(item.id)">&nbsp;删除评论</el-link>
+                            </div>
                         </div>
                     </div>
-                    <div class="topic-main-right">
-                        <div style="font-size: 13px;color: grey">
-                            <div>评论时间: {{new Date(item.time).toLocaleString()}}</div>
-                        </div>
-                        <div v-if="item.quote" class="comment-quote">
-                            回复: {{item.quote}}
-                        </div>
-                        <div class="topic-content" v-html="convertToHtml(item.content)"></div>
-                        <div style="text-align: right">
-                            <el-link :icon="ChatSquare" @click="comment.show = true;comment.quote = item"
-                                     type="info">&nbsp;回复评论</el-link>
-                            <el-link :icon="Delete" type="danger" v-if="item.user.id === store.user.id"
-                                     style="margin-left: 20px" @click="deleteComment(item.id)">&nbsp;删除评论</el-link>
-                        </div>
+                    <div style="width: fit-content;margin: 20px auto">
+                        <el-pagination background layout="prev, pager, next"
+                                       v-model:current-page="topic.page" @current-change="loadComments"
+                                       :total="topic.data.comments" :page-size="10"
+                                        hide-on-single-page/>
                     </div>
                 </div>
-                <div style="width: fit-content;margin: 20px auto">
-                    <el-pagination background layout="prev, pager, next"
-                                   v-model:current-page="topic.page" @current-change="loadComments"
-                                   :total="topic.data.comments" :page-size="10"
-                                    hide-on-single-page/>
-                </div>
+            </transition>
+            <topic-editor :show="edit" @close="edit = false" v-if="topic.data && store.forum.types"
+                          :default-type="topic.data.type" :default-text="topic.data.content"
+                          :default-title="topic.data.title" submit-button="更新帖子内容" :submit="updateTopic"/>
+            <topic-comment-editor :show="comment.show" @close="comment.show = false" :tid="tid"
+                                  :quote="comment.quote" @comment="onCommentAdd"/>
+            <div class="add-comment" @click="comment.show = true;comment.quote = null">
+                <el-icon><Plus/></el-icon>
             </div>
-        </transition>
-        <topic-editor :show="edit" @close="edit = false" v-if="topic.data && store.forum.types"
-                      :default-type="topic.data.type" :default-text="topic.data.content"
-                      :default-title="topic.data.title" submit-button="更新帖子内容" :submit="updateTopic"/>
-        <topic-comment-editor :show="comment.show" @close="comment.show = false" :tid="tid"
-                              :quote="comment.quote" @comment="onCommentAdd"/>
-        <div class="add-comment" @click="comment.show = true;comment.quote = null">
-            <el-icon><Plus/></el-icon>
+        </div>
+        <div class="recommendation" style="width: 300px">
+            <RecommendationCard>
+                <light-card v-for="item in topics.list" class="topic-card"
+                >
+                    <div style="display: flex">
+                        <div>
+                            <el-avatar :size="30" :src="store.avatarUserUrl(item.avatar)"/>
+                        </div>
+                        <div style="margin-left: 7px;transform: translateY(-2px)">
+                            <div style="font-size: 13px;font-weight: bold">{{item.username}}</div>
+                            <div style="font-size: 12px;color: grey">
+                                <el-icon><Clock/></el-icon>
+                                <div style="margin-left: 2px;display: inline-block;transform: translateY(-2px)">
+                                    {{new Date(item.time).toLocaleString()}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 5px">
+                        <topic-tag :type="item.type"/>
+                        <span style="font-weight: bold;margin-left: 7px" @click="router.push('/index/topic-detail/'+item.id)">{{item.title}}</span>
+                    </div>
+                    <div class="topic-content">{{item.text}}</div>
+                    <div style="display: grid;grid-template-columns: repeat(3, 1fr);grid-gap: 10px">
+                        <el-image class="topic-image" v-for="img in item.images" :src="img" fit="cover"></el-image>
+                    </div>
+                    <div style="display: flex;gap: 20px;font-size: 13px;margin-top: 10px;opacity: 0.8">
+                        <div>
+                            <el-icon style="vertical-align: middle"><CircleCheck/></el-icon> {{item.like}}点赞
+                        </div>
+                        <div>
+                            <el-icon style="vertical-align: middle"><Star/></el-icon> {{item.collect}}收藏
+                        </div>
+                    </div>
+                </light-card>
+            </RecommendationCard>
         </div>
     </div>
 </template>
@@ -276,6 +339,34 @@ function deleteComment(id) {
             opacity: 0.8;
             flex: 1;
         }
+    }
+}
+
+.topic-card {
+    padding: 15px;
+    transition: scale .3s;
+
+    &:hover {
+        scale: 1.015;
+        cursor: pointer;
+    }
+
+    .topic-content {
+        font-size: 13px;
+        color: grey;
+        margin: 5px 0;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .topic-image {
+        width: 100%;
+        height: 100%;
+        max-height: 110px;
+        border-radius: 5px;
     }
 }
 </style>

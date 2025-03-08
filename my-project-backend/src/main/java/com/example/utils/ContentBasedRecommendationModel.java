@@ -131,12 +131,15 @@ public class ContentBasedRecommendationModel {
 
     /**
      * 根据当前浏览的帖子进行相似帖推荐
-     * @param userId
-     * @param topicId
-     * @return
+     * @param userId 当前用户ID
+     * @param topicId 当前浏览的帖子ID
+     * @return 推荐的帖子ID列表
      */
     public List<Integer> recommendSimilarPosts(int userId, Integer topicId) {
         List<UserInteraction> interactions = getUserInteractions(userId);
+        if (interactions.isEmpty()) { // 用户没有交互过
+            interactions = Collections.emptyList();
+        }
 
         Set<Integer> userPosts = interactions.stream()
                 .map(UserInteraction::getPostId)
@@ -144,8 +147,7 @@ public class ContentBasedRecommendationModel {
 
         Map<Integer, Double> postScores = new HashMap<>(); // 推荐帖子候选列表
         for (Integer postId : postContents.keySet()) {
-            if (!userPosts.contains(postId)) { // 对用户没有交互过的帖子进行相似性分析
-                // 当前帖子内容，用户交互过的帖子
+            if (!userPosts.contains(postId)) { // 只处理用户未交互的帖子
                 double score = calculateContentSimilarity(postId, Set.of(topicId));
                 postScores.put(postId, score);
             }
