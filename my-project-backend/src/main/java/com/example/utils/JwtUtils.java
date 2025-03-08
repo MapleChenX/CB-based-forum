@@ -24,19 +24,19 @@ import java.util.concurrent.TimeUnit;
 public class JwtUtils {
 
     //用于给Jwt令牌签名校验的秘钥
-    @Value("${spring.security.jwt.key}")
+    @Value("${spring.security.jwt.key:MapleChenX}")
     private String key;
     //令牌的过期时间，以小时为单位
-    @Value("${spring.security.jwt.expire}")
+    @Value("${spring.security.jwt.expire:72}")
     private int expire;
     //为用户生成Jwt令牌的冷却时间，防止刷接口频繁登录生成令牌，以秒为单位
-    @Value("${spring.security.jwt.limit.base}")
+    @Value("${spring.security.jwt.limit.base:10}")
     private int limit_base;
     //用户如果继续恶意刷令牌，更严厉的封禁时间
-    @Value("${spring.security.jwt.limit.upgrade}")
+    @Value("${spring.security.jwt.limit.upgrade:300}")
     private int limit_upgrade;
     //判定用户在冷却时间内，继续恶意刷令牌的次数
-    @Value("${spring.security.jwt.limit.frequency}")
+    @Value("${spring.security.jwt.limit.frequency:30}")
     private int limit_frequency;
 
     @Resource

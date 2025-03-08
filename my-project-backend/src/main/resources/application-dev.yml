@@ -1,6 +1,6 @@
 # 开发环境配置
 springdoc:
-  paths-to-match: /api/**
+  paths-to-match: /**
   swagger-ui:
     operations-sorter: alpha
 
@@ -12,13 +12,10 @@ spring:
     password: IADEWGWLLANKMJGJ
   rabbitmq:
     addresses: localhost
-#    username: admin
     username: guest
-#    password: admin
     password: guest
     virtual-host: /
   datasource:
-#    url: jdbc:mysql://localhost:3306/projj
     url: jdbc:mysql://localhost:3306/forum
     username: root
     password: 111111

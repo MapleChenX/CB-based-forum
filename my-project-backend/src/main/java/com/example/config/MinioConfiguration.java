@@ -10,11 +10,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MinioConfiguration {
 
-    @Value("${spring.minio.endpoint}")
+    @Value("${spring.minio.endpoint:http://localhost:9000}")
     String endpoint;
-    @Value("${spring.minio.username}")
+    @Value("${spring.minio.username:minioadmin}")
     String username;
-    @Value("${spring.minio.password}")
+    @Value("${spring.minio.password:minioadmin}")
     String password;
 
     @Bean

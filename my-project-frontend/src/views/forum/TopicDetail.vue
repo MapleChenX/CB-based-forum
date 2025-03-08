@@ -1,8 +1,7 @@
 <script setup>
 import {useRoute} from "vue-router";
 import {get, post} from "@/net";
-import axios from "axios";
-import {computed, reactive, ref} from "vue";
+import {computed, onMounted, reactive, ref, watch} from "vue";
 import {
     ArrowLeft,
     ChatSquare,
@@ -25,12 +24,11 @@ import {useStore} from "@/store";
 import TopicEditor from "@/components/TopicEditor.vue";
 import TopicCommentEditor from "@/components/TopicCommentEditor.vue";
 import RecommendationCard from "@/components/RecommendationCard.vue";
-import LightCard from "@/components/LightCard.vue";
 
 const route = useRoute()
 const store = useStore()
 
-const tid = route.params.tid
+const tid = computed(() => route.params.tid);
 
 const topic = reactive({
     data: null,
@@ -51,24 +49,39 @@ const topics = reactive({
 })
 
 const jump = (id) => {
+    router.push({
+        name: 'topic-detail',
+        params: {tid: id}
+    })
     console.log('jump to:' + id)
-    router.push('/index/topic-detail/'+id)
 }
 
 const getSimilarRecommendation = () => {
-    get(`/api/recommend/similar/${tid}`, data => {
+    // 清空列表
+    topics.list = []
+    get(`/api/recommend/similar/${tid.value}`, data => {
         topics.list = data
     })
 }
-getSimilarRecommendation()
 
-const init = () => get(`api/forum/topic?tid=${tid}`, data => {
-    topic.data = data
+const init = () => get(`api/forum/topic?tid=${tid.value}`, data => {
+    topic.data = data // 加载帖子内容
     topic.like = data.interact.like
     topic.collect = data.interact.collect
-    loadComments(1)
+    loadComments(1) // 加载评论
+    getSimilarRecommendation() // 加载相关推荐
 })
-init()
+
+onMounted(() => {
+    init()
+})
+
+watch(() => route.params.tid, (newTid, oldTid) => {
+    if (newTid !== oldTid) {
+        init(); // 路由参数 tid 变化时重新加载数据
+    }
+});
+
 
 function convertToHtml(content) {
     const ops = JSON.parse(content).ops
@@ -77,7 +90,7 @@ function convertToHtml(content) {
 }
 
 function interact(type, message) {
-    get(`/api/forum/interact?tid=${tid}&type=${type}&state=${!topic[type]}`, () => {
+    get(`/api/forum/interact?tid=${tid.value}&type=${type}&state=${!topic[type]}`, () => {
         topic[type] = !topic[type]
         if(topic[type])
             ElMessage.success(`${message}成功！`)
@@ -88,7 +101,7 @@ function interact(type, message) {
 
 function updateTopic(editor) {
     post('/api/forum/update-topic', {
-        id: tid,
+        id: tid.value,
         type: editor.type.id,
         title: editor.title,
         content: editor.text
@@ -102,7 +115,7 @@ function updateTopic(editor) {
 function loadComments(page) {
     topic.comments = null
     topic.page = page
-    get(`/api/forum/comments?tid=${tid}&page=${page - 1}`, data => topic.comments = data)
+    get(`/api/forum/comments?tid=${tid.value}&page=${page - 1}`, data => topic.comments = data)
 }
 
 function onCommentAdd() {
@@ -230,7 +243,7 @@ function deleteComment(id) {
             <topic-editor :show="edit" @close="edit = false" v-if="topic.data && store.forum.types"
                           :default-type="topic.data.type" :default-text="topic.data.content"
                           :default-title="topic.data.title" submit-button="更新帖子内容" :submit="updateTopic"/>
-            <topic-comment-editor :show="comment.show" @close="comment.show = false" :tid="tid"
+            <topic-comment-editor :show="comment.show" @close="comment.show = false" :tid="tid.value"
                                   :quote="comment.quote" @comment="onCommentAdd"/>
             <div class="add-comment" @click="comment.show = true;comment.quote = null">
                 <el-icon><Plus/></el-icon>
@@ -243,7 +256,7 @@ function deleteComment(id) {
                 </span>
             </div>
             <div v-show="!topics.list.length" v-loading="!topics.list.length" style="width: 400px;height: 100vh"></div>
-            <RecommendationCard v-if="topics.list.length" v-for="item in topics.list" class="topic-card" @click=jump(item.id)
+            <RecommendationCard v-if="topics.list.length" v-for="item in topics.list" class="topic-card"
             >
                 <div style="display: flex">
                     <div>
