@@ -1,5 +1,6 @@
 package com.example.utils;
 
+import com.example.common.MqConst;
 import com.example.entity.UserInteraction;
 import com.example.service.InteractService;
 import com.example.service.TopicService;
@@ -10,6 +11,7 @@ import com.huaban.analysis.jieba.JiebaSegmenter;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -19,9 +21,9 @@ import java.util.stream.Collectors;
 @Component
 public class ContentBasedRecommendationModel {
 
-    private final JiebaSegmenter segmenter = new JiebaSegmenter();
-
     public static final Map<Integer, String> postContents = new HashMap<>();
+
+    public static Map<Integer, Map<String, Double>> tfidfVectors = new HashMap<>();
 
     private static final int TOP_N = 10; // 返回的推荐数量
     private static final int BASE_N = 10; // 基准帖子数量
@@ -47,11 +49,23 @@ public class ContentBasedRecommendationModel {
         updateInteractions();
     }
 
+    // todo 目前是全量更新，后面优化为增量更新
     @Scheduled(fixedRate = 60 * 60 * 1000) // 每1小时执行一次
     public void updateInteractions() {
+        long start = System.currentTimeMillis();
+        System.out.println("Updating tfidfVectors...");
         postContents.clear();
         topicService.list().forEach(topic -> postContents.put(topic.getId(), optimizePostContent(topic.getContent())));
-        System.out.println("Interactions updated");
+        tfidfVectors = calculateTFIDF(ContentBasedRecommendationModel.postContents);
+        System.out.println("tfidfVectors updated successfully!");
+        System.out.println("time elapsed: " + (System.currentTimeMillis() - start) / 60000 + " minutes");
+    }
+
+    // todo 发帖通过rabbitmq通知
+//    @RabbitListener(queues = MqConst.POST_NEW)
+    public void handlePostUpdate(String message) {
+        System.out.println("Received post update notification: " + message);
+        // Add logic to handle the post update notification
     }
 
     /**
@@ -88,7 +102,7 @@ public class ContentBasedRecommendationModel {
         for (Integer postId : postContents.keySet()) {
             if (!userPosts.contains(postId)) { // 对用户没有交互过的帖子进行相似性分析
                 // 当前帖子内容，用户交互过的帖子
-                double score = calculateContentSimilarity(postContents.get(postId), basePosts);
+                double score = calculateContentSimilarity(postId, basePosts);
                 postScores.put(postId, score);
             }
         }
@@ -132,7 +146,7 @@ public class ContentBasedRecommendationModel {
         for (Integer postId : postContents.keySet()) {
             if (!userPosts.contains(postId)) { // 对用户没有交互过的帖子进行相似性分析
                 // 当前帖子内容，用户交互过的帖子
-                double score = calculateContentSimilarity(postContents.get(postId), Set.of(topicId));
+                double score = calculateContentSimilarity(postId, Set.of(topicId));
                 postScores.put(postId, score);
             }
         }
@@ -147,7 +161,7 @@ public class ContentBasedRecommendationModel {
 
     private String optimizePostContent(String jsonInput) {
         ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode rootNode = null;
+        JsonNode rootNode;
         try {
             rootNode = objectMapper.readTree(jsonInput);
         } catch (JsonProcessingException e) {
@@ -175,7 +189,7 @@ public class ContentBasedRecommendationModel {
      * @return 分词后的集合
      */
     private Set<String> tokenize(String content) {
-        return segmenter.process(content, JiebaSegmenter.SegMode.INDEX)
+        return new JiebaSegmenter().process(content, JiebaSegmenter.SegMode.INDEX)
                 .stream()
                 .map(seg -> seg.word)
                 .collect(Collectors.toSet());
@@ -251,24 +265,20 @@ public class ContentBasedRecommendationModel {
 
     /**
      * 计算帖子内容与用户交互过的帖子的内容相似度得分
-     * todo 优化计算
-     * @param content   要比较的帖子内容
-     * @param userPosts 用户交互过的帖子ID集合
+     * @param targetPostId   要比较的帖子内容
+     * @param basePosts 基准集
      * @return 相似度得分
      */
-    private double calculateContentSimilarity(String content, Set<Integer> userPosts) {
-        // 得到所有帖子中所有词语的TF-IDF向量
-        Map<Integer, Map<String, Double>> tfidfVectors = calculateTFIDF(ContentBasedRecommendationModel.postContents);
-
-        Map<String, Double> targetVector = calculateTFIDF(Map.of(-1, content)).get(-1);
+    private double calculateContentSimilarity(Integer targetPostId, Set<Integer> basePosts) {
+        Map<String, Double> targetVector = tfidfVectors.get(targetPostId); // 目标帖子的TF-IDF向量
 
         double totalSimilarity = 0.0;
-        for (Integer postId : userPosts) {
+        for (Integer postId : basePosts) {
             Map<String, Double> userPostVector = tfidfVectors.get(postId);
             totalSimilarity += cosineSimilarity(targetVector, userPostVector);
         }
 
-        return totalSimilarity / userPosts.size();
+        return totalSimilarity / basePosts.size();
     }
 
     /**
