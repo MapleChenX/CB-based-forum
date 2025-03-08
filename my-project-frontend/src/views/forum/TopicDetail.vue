@@ -10,9 +10,9 @@ import {
     Clock, Close,
     Delete,
     EditPen,
-    Female,
+    Female, Loading,
     Male,
-    Plus,
+    Plus, Search,
     Star, Top
 } from "@element-plus/icons-vue";
 import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
@@ -49,6 +49,11 @@ const comment = reactive({
 const topics = reactive({
     list: []
 })
+
+const jump = (id) => {
+    console.log('jump to:' + id)
+    router.push('/index/topic-detail/'+id)
+}
 
 const getSimilarRecommendation = () => {
     get(`/api/recommend/similar/${tid}`, data => {
@@ -114,7 +119,7 @@ function deleteComment(id) {
 </script>
 
 <template>
-    <div class="frame" v-if="topic.data" style="max-width: 1200px;display: flex">
+    <div class="frame" v-if="topic.data" style="margin: 0 auto;max-width: 1200px;display: flex">
         <div class="topic-page" v-if="topic.data">
             <div class="topic-main" style="position: sticky;top: 0;z-index: 10">
                 <card style="display: flex;width: 100%;">
@@ -231,41 +236,47 @@ function deleteComment(id) {
                 <el-icon><Plus/></el-icon>
             </div>
         </div>
-        <div class="recommendation" style="width: 300px">
-            <RecommendationCard>
-                <light-card v-for="item in topics.list" class="topic-card"
-                >
-                    <div style="display: flex">
-                        <div>
-                            <el-avatar :size="30" :src="store.avatarUserUrl(item.avatar)"/>
-                        </div>
-                        <div style="margin-left: 7px;transform: translateY(-2px)">
-                            <div style="font-size: 13px;font-weight: bold">{{item.username}}</div>
-                            <div style="font-size: 12px;color: grey">
-                                <el-icon><Clock/></el-icon>
-                                <div style="margin-left: 2px;display: inline-block;transform: translateY(-2px)">
-                                    {{new Date(item.time).toLocaleString()}}
-                                </div>
+        <div v-if="loading" class="loading-spinner" style="width: 300px;height: 300px">
+            <el-icon> <loading /> </el-icon>
+        </div>
+        <div v-else-if="topics.list.length" class="recommendation" style="width: 400px;margin-left: 30px">
+            <div style="font-size: 20px;font-weight: bold;line-height: 45px;height: 45px;padding: 10px">
+                <span class="recommend-title">
+                 相关推荐<el-icon><Search/></el-icon>
+                </span>
+            </div>
+            <RecommendationCard v-for="item in topics.list" class="topic-card"
+            >
+                <div style="display: flex">
+                    <div>
+                        <el-avatar :size="30" :src="store.avatarUserUrl(item.avatar)"/>
+                    </div>
+                    <div style="margin-left: 7px;transform: translateY(-2px)">
+                        <div style="font-size: 13px;font-weight: bold">{{item.username}}</div>
+                        <div style="font-size: 12px;color: grey">
+                            <el-icon><Clock/></el-icon>
+                            <div style="margin-left: 2px;display: inline-block;transform: translateY(-2px)">
+                                {{new Date(item.time).toLocaleString()}}
                             </div>
                         </div>
                     </div>
-                    <div style="margin-top: 5px">
-                        <topic-tag :type="item.type"/>
-                        <span style="font-weight: bold;margin-left: 7px" @click="router.push('/index/topic-detail/'+item.id)">{{item.title}}</span>
+                </div>
+                <div style="margin-top: 5px">
+                    <topic-tag :type="item.type"/>
+                    <span style="font-weight: bold;margin-left: 7px" @click=jump(item.id)>{{item.title}}</span>
+                </div>
+                <div class="topic-content">{{item.text}}</div>
+                <div style="display: grid;grid-template-columns: repeat(3, 1fr);grid-gap: 10px">
+                    <el-image class="topic-image" v-for="img in item.images" :src="img" fit="cover"></el-image>
+                </div>
+                <div style="display: flex;gap: 20px;font-size: 13px;margin-top: 10px;opacity: 0.8">
+                    <div>
+                        <el-icon style="vertical-align: middle"><CircleCheck/></el-icon> {{item.like}}点赞
                     </div>
-                    <div class="topic-content">{{item.text}}</div>
-                    <div style="display: grid;grid-template-columns: repeat(3, 1fr);grid-gap: 10px">
-                        <el-image class="topic-image" v-for="img in item.images" :src="img" fit="cover"></el-image>
+                    <div>
+                        <el-icon style="vertical-align: middle"><Star/></el-icon> {{item.collect}}收藏
                     </div>
-                    <div style="display: flex;gap: 20px;font-size: 13px;margin-top: 10px;opacity: 0.8">
-                        <div>
-                            <el-icon style="vertical-align: middle"><CircleCheck/></el-icon> {{item.like}}点赞
-                        </div>
-                        <div>
-                            <el-icon style="vertical-align: middle"><Star/></el-icon> {{item.collect}}收藏
-                        </div>
-                    </div>
-                </light-card>
+                </div>
             </RecommendationCard>
         </div>
     </div>
@@ -343,8 +354,9 @@ function deleteComment(id) {
 }
 
 .topic-card {
-    padding: 15px;
+    padding: 10px;
     transition: scale .3s;
+    margin-bottom: 20px;
 
     &:hover {
         scale: 1.015;
@@ -368,5 +380,11 @@ function deleteComment(id) {
         max-height: 110px;
         border-radius: 5px;
     }
+}
+
+.recommend-title {
+    display: flex;       /* 使用 Flexbox 布局 */
+    align-items: center; /* 垂直居中对齐图标和文字 */
+    gap: 5px;            /* 设置图标和文字之间的间距 */
 }
 </style>
