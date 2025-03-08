@@ -236,16 +236,14 @@ function deleteComment(id) {
                 <el-icon><Plus/></el-icon>
             </div>
         </div>
-        <div v-if="loading" class="loading-spinner" style="width: 300px;height: 300px">
-            <el-icon> <loading /> </el-icon>
-        </div>
-        <div v-else-if="topics.list.length" class="recommendation" style="width: 400px;margin-left: 30px">
+        <div class="recommendation" style="width: 400px;margin-left: 30px">
             <div style="font-size: 20px;font-weight: bold;line-height: 45px;height: 45px;padding: 10px">
                 <span class="recommend-title">
                  相关推荐<el-icon><Search/></el-icon>
                 </span>
             </div>
-            <RecommendationCard v-for="item in topics.list" class="topic-card"
+            <div v-show="!topics.list.length" v-loading="!topics.list.length" style="width: 400px;height: 100vh"></div>
+            <RecommendationCard v-if="topics.list.length" v-for="item in topics.list" class="topic-card"
             >
                 <div style="display: flex">
                     <div>
