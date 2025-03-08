@@ -238,12 +238,12 @@ function deleteComment(id) {
         </div>
         <div class="recommendation" style="width: 400px;margin-left: 30px">
             <div style="font-size: 20px;font-weight: bold;line-height: 45px;height: 45px;padding: 10px">
-                <span class="recommend-title">
-                 相关推荐<el-icon><Search/></el-icon>
+                <span >
+                 相关推荐<el-icon style="vertical-align: middle;margin-left: 5px"><Search/></el-icon>
                 </span>
             </div>
             <div v-show="!topics.list.length" v-loading="!topics.list.length" style="width: 400px;height: 100vh"></div>
-            <RecommendationCard v-if="topics.list.length" v-for="item in topics.list" class="topic-card"
+            <RecommendationCard v-if="topics.list.length" v-for="item in topics.list" class="topic-card" @click=jump(item.id)
             >
                 <div style="display: flex">
                     <div>
