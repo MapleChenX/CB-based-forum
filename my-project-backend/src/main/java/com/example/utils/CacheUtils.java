@@ -3,14 +3,14 @@ package com.example.utils;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import jakarta.annotation.Resource;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Component
 public class CacheUtils {
@@ -44,5 +44,22 @@ public class CacheUtils {
 
     public void deleteCache(String key){
         template.delete(key);
+    }
+
+
+    public String getFromHashBucketById(String bucket, Integer postId) {
+        return Objects.requireNonNull(template.opsForHash().get(bucket, postId.toString())).toString();
+    }
+
+    public void save2HashBucketById(String bucket, Integer postId, String content) {
+        template.opsForHash().put(bucket, postId.toString(), content);
+    }
+
+    public Map<Object, Object> getAllByHashBucket(String bucket) {
+        return template.opsForHash().entries(bucket);
+    }
+
+    public Cursor<Map.Entry<Object, Object>> getIteratorByHashBucket(String bucket) {
+        return template.opsForHash().scan(bucket, ScanOptions.scanOptions().match("*").count(100).build());
     }
 }

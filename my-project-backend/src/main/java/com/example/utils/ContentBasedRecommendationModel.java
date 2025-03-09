@@ -1,9 +1,11 @@
 package com.example.utils;
 
+import com.alibaba.fastjson2.JSON;
 import com.example.common.MqConst;
 import com.example.entity.UserInteraction;
 import com.example.service.InteractService;
 import com.example.service.TopicService;
+import com.example.tfidf.TFIDF;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +14,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -43,20 +46,38 @@ public class ContentBasedRecommendationModel {
     @Resource
     private TopicService topicService;
 
+    @Resource
+    private StringRedisTemplate template;
+
+    @Resource
+    private TFIDF tfidf;
+
 
     @PostConstruct
     public void init() {
-        updateInteractions();
+        boolean hasPostContent = Boolean.TRUE.equals(template.hasKey(Const.POST_CONTENT_BUCKET))
+                && template.opsForHash().size(Const.POST_CONTENT_BUCKET) > 0;
+        boolean hasTFIDF = Boolean.TRUE.equals(template.hasKey(Const.TFIDF_BUCKET))
+                && template.opsForHash().size(Const.TFIDF_BUCKET) > 0;
+
+        // 如果 Redis 里已经有数据，则不需要计算与同步
+        if (hasPostContent && hasTFIDF) {
+            return;
+        }
+
+        // 重新计算并同步 TF-IDF 数据
+        updateTFIDF();
     }
 
-    // todo 目前是全量更新，后面优化为增量更新
     @Scheduled(fixedRate = 60 * 60 * 1000) // 每1小时执行一次
-    public void updateInteractions() {
+    public void updateTFIDF() {
         long start = System.currentTimeMillis();
         System.out.println("Updating tfidfVectors...");
         postContents.clear();
         topicService.list().forEach(topic -> postContents.put(topic.getId(), optimizePostContent(topic.getContent())));
         tfidfVectors = calculateTFIDF(ContentBasedRecommendationModel.postContents);
+        // 同步到redis
+        tfidf.sync2Redis(postContents, tfidfVectors);
         System.out.println("tfidfVectors updated successfully!");
         System.out.println("time elapsed: " + (System.currentTimeMillis() - start) / 60000 + " minutes");
     }
