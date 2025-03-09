@@ -2,6 +2,7 @@ package com.example.tfidf;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
+import com.example.utils.CacheUtils;
 import com.example.utils.Const;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -23,14 +24,11 @@ public class TFIDF {
      */
 
     @Resource
-    StringRedisTemplate template;
+    private StringRedisTemplate template;
 
+    @Resource
+    private CacheUtils cacheUtils;
 
-    /**
-     * 新增 8 个方法：
-     *  content：删除、修改、查询、迭代
-     *  tfidfVectors：删除、修改、查询、迭代
-     */
 
     public void saveContents2Redis(Map<Integer, String> postContents) {
         Map<String, String> contentMap = new HashMap<>();
@@ -67,17 +65,21 @@ public class TFIDF {
     // content 迭代器
     public Cursor<Map.Entry<Object, Object>> getContentIterator() {
         ScanOptions scanOptions = ScanOptions.scanOptions().count(500).match("*").build();
-        Cursor<Map.Entry<Object, Object>> scan = template.opsForHash().scan(Const.POST_CONTENT_BUCKET, scanOptions);
-        return scan;
+        return template.opsForHash().scan(Const.POST_CONTENT_BUCKET, scanOptions);
     }
-
-//    Cursor<Map.Entry<Integer, Map<String, Double>>> getTFIDFIterator()
 
     // tfidf 迭代器
     public Cursor<Map.Entry<Object, Object>> getTFIDFIterator() {
         ScanOptions scanOptions = ScanOptions.scanOptions().count(500).match("*").build();
-        Cursor<Map.Entry<Object, Object>> scan = template.opsForHash().scan(Const.TFIDF_BUCKET, scanOptions);
-        return scan;
+        return template.opsForHash().scan(Const.TFIDF_BUCKET, scanOptions);
+    }
+
+    public Cursor<Map.Entry<Integer, Map<String, Double>>> getGoodTFIDFIterator() {
+        return cacheUtils.getRedisIterator(Const.TFIDF_BUCKET, new TypeReference<Integer>() {}, new TypeReference<Map<String, Double>>() {});
+    }
+
+    public Cursor<Map.Entry<Integer, String>> getGoodContentIterator() {
+        return cacheUtils.getRedisIterator(Const.POST_CONTENT_BUCKET, new TypeReference<Integer>() {}, new TypeReference<String>() {});
     }
 
     public int contentCount() {
@@ -87,6 +89,5 @@ public class TFIDF {
     public int tfidfCount() {
         return Math.toIntExact(template.opsForHash().size(Const.TFIDF_BUCKET));
     }
-
 
 }

@@ -1,8 +1,11 @@
 package com.example.utils;
 
+import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.TypeReference;
 import jakarta.annotation.Resource;
+import org.checkerframework.checker.units.qual.K;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -62,4 +65,63 @@ public class CacheUtils {
     public Cursor<Map.Entry<Object, Object>> getIteratorByHashBucket(String bucket) {
         return template.opsForHash().scan(bucket, ScanOptions.scanOptions().match("*").count(100).build());
     }
+
+    public <K, V> Cursor<Map.Entry<K, V>> getRedisIterator(String bucket, TypeReference<K> keyTypeReference, TypeReference<V> valueTypeReference) {
+        ScanOptions scanOptions = ScanOptions.scanOptions().count(500).match("*").build();
+        Cursor<Map.Entry<Object, Object>> cursor = template.opsForHash().scan(bucket, scanOptions);
+
+        return new Cursor<Map.Entry<K, V>>() {
+
+            @Override
+            public long getCursorId() {
+                return cursor.getCursorId();
+            }
+
+            @Override
+            public boolean isClosed() {
+                return cursor.isClosed();
+            }
+
+            @Override
+            public long getPosition() {
+                return cursor.getPosition();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return cursor.hasNext();
+            }
+
+            @Override
+            public Map.Entry<K, V> next() {
+                Map.Entry<Object, Object> entry = cursor.next();
+                K key = JSON.parseObject(String.valueOf(entry.getKey()), keyTypeReference);
+                V value = JSON.parseObject(String.valueOf(entry.getValue()), valueTypeReference);
+                return new Map.Entry<K, V>() {
+                    @Override
+                    public K getKey() {
+                        return key;
+                    }
+
+                    @Override
+                    public V getValue() {
+                        return value;
+                    }
+
+                    @Override
+                    public V setValue(V value) {
+                        throw new UnsupportedOperationException("setValue operation is not supported.");
+                    }
+                };
+            }
+
+            @Override
+            public void close() {
+                cursor.close();
+            }
+        };
+    }
+
+
+
 }

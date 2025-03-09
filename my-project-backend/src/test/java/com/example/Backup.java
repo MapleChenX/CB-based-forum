@@ -82,7 +82,6 @@ public class Backup {
         System.out.println("time elapsed: " + (System.currentTimeMillis() - start) / 60000 + " minutes");
     }
 
-    // todo 发帖通过rabbitmq通知
 //    @RabbitListener(queues = MqConst.POST_NEW)
     public void handlePostUpdate(String message) {
         System.out.println("Received post update notification: " + message);
