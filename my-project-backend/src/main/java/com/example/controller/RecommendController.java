@@ -4,8 +4,10 @@ import com.example.entity.RestBean;
 import com.example.entity.vo.response.TopicPreviewVO;
 import com.example.service.RecommendService;
 import com.example.utils.Const;
+import com.example.utils.ContentBasedRecommendationModel;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +19,9 @@ public class RecommendController {
     @Resource
     @Lazy
     RecommendService recommendService;
+
+    @Resource
+    ContentBasedRecommendationModel contentBasedRecommendationModel;
 
     /**
      * 主页推荐
@@ -39,6 +44,16 @@ public class RecommendController {
                                                            @PathVariable Integer topicId){
         List<TopicPreviewVO> topicPreviewVOS = recommendService.recommendSimilarPosts(uid, topicId);
         return topicPreviewVOS == null ? RestBean.failure(400, "无相似帖子推荐") : RestBean.success(topicPreviewVOS);
+    }
+
+    /**
+     * 推荐系统全量初始化
+     */
+    @GetMapping("/recommendationInit")
+    @PreAuthorize("hasRole('admin')")
+    public RestBean<?> recommendationInit(){
+        contentBasedRecommendationModel.updateTFIDF();
+        return RestBean.success();
     }
 
 }

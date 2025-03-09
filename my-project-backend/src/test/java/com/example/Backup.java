@@ -1,12 +1,12 @@
-package com.example.utils;
+package com.example;
 
-import com.alibaba.fastjson2.JSONObject;
-import com.alibaba.fastjson2.TypeReference;
+import com.alibaba.fastjson2.JSON;
+import com.example.common.MqConst;
 import com.example.entity.UserInteraction;
-import com.example.entity.dto.Topic;
 import com.example.service.InteractService;
 import com.example.service.TopicService;
 import com.example.tfidf.TFIDF;
+import com.example.utils.Const;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,7 +15,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +23,11 @@ import java.util.stream.Collectors;
 
 @Component
 @Slf4j
-public class ContentBasedRecommendationModel {
+public class Backup {
+
+    public static final Map<Integer, String> postContents = new HashMap<>();
+
+    public static Map<Integer, Map<String, Double>> tfidfVectors = new HashMap<>();
 
     private static final int TOP_N = 10; // 返回的推荐数量
     private static final int BASE_N = 10; // 基准帖子数量
@@ -32,10 +35,10 @@ public class ContentBasedRecommendationModel {
     private static final long TIME_DECAY_FACTOR = 1000 * 60 * 60 * 24 * 30L; // 30 days
 
     private static final Map<String, Double> INTERACTION_TYPE_WEIGHTS = Map.of(
-        "view", 0.6,
-        "comment", 0.8,
-        "like", 1.0,
-        "collect", 1.2
+            "view", 0.6,
+            "comment", 0.8,
+            "like", 1.0,
+            "collect", 1.2
     );
 
     @Resource
@@ -53,10 +56,6 @@ public class ContentBasedRecommendationModel {
 
     @PostConstruct
     public void init() {
-
-        template.delete(Const.POST_CONTENT_BUCKET);
-        template.delete(Const.TFIDF_BUCKET);
-
         boolean hasPostContent = Boolean.TRUE.equals(template.hasKey(Const.POST_CONTENT_BUCKET))
                 && template.opsForHash().size(Const.POST_CONTENT_BUCKET) > 0;
         boolean hasTFIDF = Boolean.TRUE.equals(template.hasKey(Const.TFIDF_BUCKET))
@@ -72,22 +71,18 @@ public class ContentBasedRecommendationModel {
     }
 
     public void updateTFIDF() {
-        log.info("Updating tfidfVectors...");
         long start = System.currentTimeMillis();
-        List<Topic> list = topicService.list();
-        // 分批导入redis，一批500条
-        for (int i = 0; i < list.size(); i += 500) {
-            List<Topic> subList = list.subList(i, Math.min(i + 500, list.size()));
-            Map<Integer, String> contentRedis = subList.stream()
-                    .collect(Collectors.toMap(Topic::getId, topic -> optimizePostContent(topic.getContent())));
-            tfidf.saveContents2Redis(contentRedis);
-        }
-
-        calculateTFIDF();
+        System.out.println("Updating tfidfVectors...");
+        postContents.clear();
+        topicService.list().forEach(topic -> postContents.put(topic.getId(), optimizePostContent(topic.getContent())));
+        tfidfVectors = calculateTFIDF(Backup.postContents);
+        // 同步到redis
+        tfidf.sync2Redis(postContents, tfidfVectors);
         System.out.println("tfidfVectors updated successfully!");
         System.out.println("time elapsed: " + (System.currentTimeMillis() - start) / 60000 + " minutes");
     }
 
+    // todo 发帖通过rabbitmq通知
 //    @RabbitListener(queues = MqConst.POST_NEW)
     public void handlePostUpdate(String message) {
         System.out.println("Received post update notification: " + message);
@@ -125,10 +120,7 @@ public class ContentBasedRecommendationModel {
                 .collect(Collectors.toSet());
 
         Map<Integer, Double> postScores = new HashMap<>(); // 推荐帖子候选列表
-        Cursor<Map.Entry<Object, Object>> contentIterator = tfidf.getContentIterator();
-        while (contentIterator.hasNext()) {
-            Map.Entry<Object, Object> next = contentIterator.next();
-            Integer postId = Integer.parseInt(String.valueOf(next.getKey()));
+        for (Integer postId : postContents.keySet()) {
             if (!userPosts.contains(postId)) { // 对用户没有交互过的帖子进行相似性分析
                 // 当前帖子内容，用户交互过的帖子
                 double score = calculateContentSimilarity(postId, basePosts);
@@ -175,10 +167,7 @@ public class ContentBasedRecommendationModel {
                 .collect(Collectors.toSet());
 
         Map<Integer, Double> postScores = new HashMap<>(); // 推荐帖子候选列表
-        Cursor<Map.Entry<Object, Object>> contentIterator = tfidf.getContentIterator();
-        while (contentIterator.hasNext()) {
-            Map.Entry<Object, Object> next = contentIterator.next();
-            Integer postId = Integer.parseInt(String.valueOf(next.getKey()));
+        for (Integer postId : postContents.keySet()) {
             if (!userPosts.contains(postId)) { // 只处理用户未交互的帖子
                 double score = calculateContentSimilarity(postId, Set.of(topicId));
                 postScores.put(postId, score);
@@ -230,18 +219,19 @@ public class ContentBasedRecommendationModel {
     }
 
     /**
-     * 全量计算帖子的TF-IDF向量
-     *
+     * 计算帖子的TF-IDF向量
+     * @param postContents 帖子ID与内容的映射
      * @return 帖子ID与其每个词语的TF-IDF向量的映射
      */
-    private void calculateTFIDF() {
+    private Map<Integer, Map<String, Double>> calculateTFIDF(Map<Integer, String> postContents) {
+        Map<Integer, Map<String, Double>> tfidfVectors = new HashMap<>();
         Map<String, Integer> documentFrequency = new HashMap<>(); // 词语在所有文档中出现的次数
+        int totalDocuments = postContents.size();
 
-        Cursor<Map.Entry<Object, Object>> contentIterator = tfidf.getContentIterator();
-        while (contentIterator.hasNext()) {
-            Map.Entry<Object, Object> next = contentIterator.next();
-            Integer postId = Integer.parseInt(String.valueOf(next.getKey()));
-            String content = String.valueOf(next.getValue());
+        // 计算词频和文档频率
+        for (Map.Entry<Integer, String> entry : postContents.entrySet()) {
+            int postId = entry.getKey();
+            String content = entry.getValue();
             Set<String> tokens = tokenize(content);
             Map<String, Double> termFrequency = new HashMap<>();
 
@@ -250,22 +240,20 @@ public class ContentBasedRecommendationModel {
                 documentFrequency.put(token, documentFrequency.getOrDefault(token, 0) + 1); // 在所有文档中的出现次数
             }
 
-            tfidf.saveTFIDFs2Redis(Map.of(postId, termFrequency)); // temp此时只是中间值，是词频，还需要计算才能得到TF-IDF
+            tfidfVectors.put(postId, termFrequency);
         }
 
         // 计算TF-IDF
-        int totalDocuments = tfidf.contentCount();
-        Cursor<Map.Entry<Object, Object>> tfidfIterator = tfidf.getTFIDFIterator();
-        while (tfidfIterator.hasNext()) {
-            Map.Entry<Object, Object> termFrequency = tfidfIterator.next();
-            Integer postId = Integer.parseInt(String.valueOf(termFrequency.getKey()));
-            Map<String, Double> value = JSONObject.parseObject(String.valueOf(termFrequency.getValue()), new TypeReference<Map<String, Double>>() {});
-            value.forEach((token, tf) -> {
+        for (Map<String, Double> termFrequency : tfidfVectors.values()) { // 一篇文章的内词语的词频
+            for (Map.Entry<String, Double> entry : termFrequency.entrySet()) { // 一个词语的词频
+                String token = entry.getKey();
+                double tf = entry.getValue();
                 double idf = Math.log((double) totalDocuments / (1 + documentFrequency.get(token))); // 文档集总数/词语在文档集中出现的次数
-                value.put(token, tf * idf);
-            });
-            tfidf.saveTFIDFs2Redis(Map.of(postId, value));
+                termFrequency.put(token, tf * idf); // 一个词语的TF-IDF向量值
+            }
         }
+
+        return tfidfVectors;
     }
 
     /**
@@ -305,11 +293,11 @@ public class ContentBasedRecommendationModel {
      * @return 相似度得分
      */
     private double calculateContentSimilarity(Integer targetPostId, Set<Integer> basePosts) {
-        Map<String, Double> targetVector = tfidf.getTFIDFFromHashBucketById(targetPostId);
+        Map<String, Double> targetVector = tfidfVectors.get(targetPostId); // 目标帖子的TF-IDF向量
 
         double totalSimilarity = 0.0;
         for (Integer postId : basePosts) {
-            Map<String, Double> userPostVector = tfidf.getTFIDFFromHashBucketById(postId);
+            Map<String, Double> userPostVector = tfidfVectors.get(postId);
             totalSimilarity += cosineSimilarity(targetVector, userPostVector);
         }
 
