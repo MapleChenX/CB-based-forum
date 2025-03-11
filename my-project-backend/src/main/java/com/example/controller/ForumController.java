@@ -139,4 +139,17 @@ public class ForumController {
         topicService.deleteComment(id, uid);
         return RestBean.success();
     }
+
+    /**
+     * es搜索
+     * @param keyword 关键字
+     * @param page 页码
+     * @param offset 偏移量
+     */
+    @GetMapping("/search")
+    public RestBean<List<TopicPreviewVO>> search(@RequestParam(required = true) String keyword,
+                                                 @RequestParam(defaultValue = "1") Integer page,
+                                                 @RequestParam(defaultValue = "10") Integer offset){
+        return RestBean.success(topicService.search(keyword, page, offset));
+    }
 }

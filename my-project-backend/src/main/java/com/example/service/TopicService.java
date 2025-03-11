@@ -27,4 +27,5 @@ public interface TopicService extends IService<Topic> {
     List<CommentVO> comments(int tid, int pageNumber);
     void deleteComment(int id, int uid);
     TopicPreviewVO resolveToPreview(Topic topic);
+    List<TopicPreviewVO> search(String keyword, Integer page, Integer offset);
 }

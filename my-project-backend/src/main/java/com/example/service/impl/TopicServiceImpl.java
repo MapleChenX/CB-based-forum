@@ -1,5 +1,8 @@
 package com.example.service.impl;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -63,6 +66,9 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Resource
     NotificationService notificationService;
+
+    @Resource
+    ElasticsearchClient elasticsearchClient;
 
     private Set<Integer> types = null;
 
@@ -376,6 +382,43 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         vo.setText(previewText.length() > 300 ? previewText.substring(0, 300) : previewText.toString());
         vo.setImages(images);
         return vo;
+    }
+
+    @Override
+    public List<TopicPreviewVO> search(String keyword, Integer page, Integer offset) {
+        // 搜索结果
+        // 1-根据关键字查询es中的title和content获取ids
+
+        SearchRequest searchRequest = new SearchRequest.Builder()
+                .index("forum_posts")
+                .query(q -> q
+                        .match(m -> m
+                                .field("title")
+                                .field("content")
+                                .query(keyword)
+                        )
+                )
+                .from((page - 1) * offset)  // Pagination
+                .size(offset)
+                .build();
+
+        // 2-根据ids查询mysql
+        try {
+            SearchResponse<Map> response = elasticsearchClient.search(searchRequest, Map.class);
+
+            List<Integer> postIds = response.hits().hits().stream()
+                    .map(hit -> Integer.parseInt(hit.id()))
+                    .toList();
+
+            // 获取分页数据
+            List<Topic> topics = baseMapper.selectList(Wrappers.<Topic>query().in("id", postIds));
+            if (topics.isEmpty()) return null;
+            // 3-转换为Preview对象并返回
+            return topics.stream().map(this::resolveToPreview).toList();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     // 数据库数据
