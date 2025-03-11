@@ -133,7 +133,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
         // 创建索引请求
         IndexRequest<Map> indexRequest = new IndexRequest.Builder<Map>()
-                .index(Const.FORUM_POSTS_ES)
+                .index(Const.ES_INDEX_FORUM_POSTS)
                 .id(String.valueOf(topic.getId()))
                 .document(document)
                 .build();
@@ -434,7 +434,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         // 1-根据关键字查询es中的title和content获取ids
 
         SearchRequest searchRequest = new SearchRequest.Builder()
-                .index("forum_posts")
+                .index(Const.ES_INDEX_FORUM_POSTS)
                 .query(q -> q
                         .bool(b -> b
                                 .must(m -> m

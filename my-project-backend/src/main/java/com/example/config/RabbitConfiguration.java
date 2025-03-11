@@ -1,5 +1,6 @@
 package com.example.config;
 
+import com.example.utils.Const;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.context.annotation.Bean;
@@ -15,5 +16,10 @@ public class RabbitConfiguration {
         return QueueBuilder
                 .durable("mail")
                 .build();
+    }
+
+    @Bean
+    public Queue forumQueue() {
+        return new Queue(Const.FORUM_POSTS_MQ, true, false, false);
     }
 }

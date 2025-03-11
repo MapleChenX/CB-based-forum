@@ -1,6 +1,7 @@
 package com.example.utils;
 
 import com.alibaba.fastjson2.JSONObject;
+import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -30,9 +31,21 @@ public class RabbitMQUtil {
     }
 
     public void sendMessage(String queueName, String msg)  {
+        Channel channel = null;
         try {
-            rabbitTemplate.getConnectionFactory().createConnection().createChannel(false)
-                    .queueDeclare(queueName, true, false, false, null);
+            // 获取连接并创建channel
+            channel = rabbitTemplate.getConnectionFactory().createConnection().createChannel(false);
+
+            // 判断队列是否存在
+            try {
+                channel.queueDeclarePassive(queueName);  // 检查队列是否存在
+            } catch (Exception e) {
+                // 如果队列不存在，则声明队列
+                channel.queueDeclare(queueName, true, false, false, null);  // 随用随创建
+            }
+
+            // 发送消息
+            rabbitTemplate.convertAndSend(queueName, msg);
         } catch (Exception e) {
             log.error("创建队列失败:{}", queueName);
         }
