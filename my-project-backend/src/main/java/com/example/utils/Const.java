@@ -31,4 +31,6 @@ public final class Const {
     public final static String FORUM_TOPIC_PREVIEW_CACHE = "topic:preview:";
     public final static String TFIDF_BUCKET = "tfidf:bucket:";
     public final static String POST_CONTENT_BUCKET = "post:content:";
+    public final static String FORUM_POSTS_ES = "forum:posts:es";
+    public final static String FORUM_POSTS_MQ = "forum:posts:MQ";
 }

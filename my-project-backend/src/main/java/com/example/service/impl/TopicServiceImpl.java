@@ -1,10 +1,13 @@
 package com.example.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.TypeReference;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -19,16 +22,17 @@ import com.example.entity.vo.response.TopicTopVO;
 import com.example.mapper.*;
 import com.example.service.NotificationService;
 import com.example.service.TopicService;
-import com.example.utils.CacheUtils;
-import com.example.utils.Const;
-import com.example.utils.FlowUtils;
+import com.example.utils.*;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.client.RequestOptions;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -70,6 +74,9 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     @Resource
     ElasticsearchClient elasticsearchClient;
 
+    @Resource
+    RabbitMQUtil mqUtil;
+
     private Set<Integer> types = null;
 
     // @PostConstruct 是一个Java注解，它表示该注解修饰的方法会在依赖注入完成后，且在类的构造函数执行后立即执行。这个注解通常用于进行一些初始化操作。
@@ -98,15 +105,45 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         if (!flowUtils.limitPeriodCounterCheck(key, 100, 600))
             return "发文频繁，请稍后再试！";
         Topic topic = new Topic();
+        Long customId = UUID.randomUUID().getMostSignificantBits();
+        topic.setId(customId.intValue());  // 设置自定义 ID
         BeanUtils.copyProperties(vo, topic);
         topic.setContent(vo.getContent().toJSONString());
         topic.setUid(uid);
         topic.setTime(new Date());
         if (this.save(topic)) {
+            // 同步到es
+            mqUtil.sendMessage(Const.FORUM_POSTS_MQ, topic);
             cacheUtils.deleteCachePattern(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
             return null;
         } else {
             return "内部错误，请联系管理员！";
+        }
+    }
+
+    // ES同步
+    @RabbitListener(queues = Const.FORUM_POSTS_MQ)
+    public void saveToEs(Topic topic) {
+        topic.setContent(PostContentConverter.convert(topic.getContent()));
+
+        // 构造 Elasticsearch 文档数据
+        Map<String, Object> document = new HashMap<>();
+        document.put("title", topic.getTitle());
+        document.put("content", topic.getContent());
+
+        // 创建索引请求
+        IndexRequest<Map> indexRequest = new IndexRequest.Builder<Map>()
+                .index(Const.FORUM_POSTS_ES)
+                .id(String.valueOf(topic.getId()))
+                .document(document)
+                .build();
+
+        // 执行索引请求
+        try {
+            IndexResponse response = elasticsearchClient.index(indexRequest);
+            log.info("ES 同步成功，响应：{}", response.id());
+        } catch (IOException e) {
+            log.error("ES 同步失败：{}", e.getMessage());
         }
     }
 
@@ -123,6 +160,13 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
                 .set("content", vo.getContent().toString())
                 .set("type", vo.getType())
         );
+
+        // 同步到 ES
+        Topic topic = new Topic();
+        topic.setId(vo.getId());
+        topic.setTitle(vo.getTitle());
+        topic.setContent(vo.getContent().toJSONString());
+        mqUtil.sendMessage(Const.FORUM_POSTS_MQ, topic);
         return null;
     }
 

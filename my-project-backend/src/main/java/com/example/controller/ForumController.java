@@ -141,7 +141,7 @@ public class ForumController {
     }
 
     /**
-     * es搜索
+     * 帖子搜索
      * @param keyword 关键字
      * @param page 页码
      * @param offset 偏移量
