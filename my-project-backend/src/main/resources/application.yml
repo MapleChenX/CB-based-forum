@@ -16,10 +16,22 @@ spring:
     password: guest
     virtual-host: /
   datasource:
-    url: jdbc:mysql://localhost:3306/forum
-    username: root
-    password: 111111
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    mysql:
+      url: jdbc:mysql://localhost:3306/forum
+      username: root
+      password: 111111
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      hikari:
+        pool-name: MySQLHikariPool
+
+    postgresql:
+      url: jdbc:postgresql://localhost:5432/your_postgresql_db
+      username: your_username
+      password: your_password
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        pool-name: PostgresHikariPool
+
   security:
     jwt:
       key: 'MapleChenX'

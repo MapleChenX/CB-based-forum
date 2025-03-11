@@ -18,13 +18,6 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 public class ElasticsearchConfig {
 
-    /**
-     * 1-增量同步
-     * 2-修改同步
-     * 3-搜索
-     */
-
-
     @Bean
     public ElasticsearchClient elasticsearchClient() {
         BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
