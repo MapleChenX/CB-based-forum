@@ -3,7 +3,7 @@ package com.example.controller;
 import com.example.entity.RestBean;
 import com.example.entity.vo.response.TopicPreviewVO;
 import com.example.service.RecommendService;
-import com.example.utils.Const;
+import com.example.common.Const;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.web.bind.annotation.*;

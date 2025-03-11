@@ -2,7 +2,7 @@ package com.example.controller;
 
 import com.example.entity.RestBean;
 import com.example.service.ImageService;
-import com.example.utils.Const;
+import com.example.common.Const;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;

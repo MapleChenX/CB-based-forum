@@ -1,4 +1,4 @@
-package com.example.utils;
+package com.example.common;
 
 /**
  * 一些常量字符串整合

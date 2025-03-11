@@ -2,16 +2,13 @@ package com.example.tfidf;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
-import com.example.service.TopicService;
 import com.example.utils.CacheUtils;
-import com.example.utils.Const;
+import com.example.common.Const;
 import jakarta.annotation.Resource;
-import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class TFIDF {
@@ -66,10 +63,5 @@ public class TFIDF {
         }
         return JSON.parseObject(jsonVector, new TypeReference<Map<String, Double>>() {});
     }
-
-    // content 迭代器
-
-    // tfidf 迭代器
-
 
 }

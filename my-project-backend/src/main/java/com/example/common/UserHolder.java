@@ -1,4 +1,4 @@
-package com.example.utils;
+package com.example.common;
 
 public class UserHolder {
     private static final ThreadLocal<Integer> userHolder = new ThreadLocal<>();

@@ -1,7 +1,7 @@
 package com.example.filter;
 
 import com.example.entity.RestBean;
-import com.example.utils.Const;
+import com.example.common.Const;
 import com.example.utils.FlowUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.FilterChain;

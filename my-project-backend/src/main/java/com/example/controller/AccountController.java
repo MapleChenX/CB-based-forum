@@ -13,7 +13,7 @@ import com.example.entity.vo.response.AccountVO;
 import com.example.service.AccountDetailsService;
 import com.example.service.AccountPrivacyService;
 import com.example.service.AccountService;
-import com.example.utils.Const;
+import com.example.common.Const;
 import com.example.utils.ControllerUtils;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;

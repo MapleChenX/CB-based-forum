@@ -1,6 +1,6 @@
 package com.example.filter;
 
-import com.example.utils.Const;
+import com.example.common.Const;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;

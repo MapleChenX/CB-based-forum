@@ -7,7 +7,7 @@ import com.example.entity.dto.StoreImage;
 import com.example.mapper.AccountMapper;
 import com.example.mapper.ImageStoreMapper;
 import com.example.service.ImageService;
-import com.example.utils.Const;
+import com.example.common.Const;
 import com.example.utils.FlowUtils;
 import io.minio.*;
 import jakarta.annotation.Resource;

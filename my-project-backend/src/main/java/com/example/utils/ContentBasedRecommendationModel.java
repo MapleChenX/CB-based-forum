@@ -1,5 +1,6 @@
 package com.example.utils;
 
+import com.example.common.VectorMap;
 import com.example.entity.UserInteraction;
 import com.example.service.InteractService;
 import com.example.service.TopicService;
@@ -75,13 +76,6 @@ public class ContentBasedRecommendationModel {
 
         System.out.println("tfidfVectors updated successfully!");
         System.out.println("time elapsed: " + (System.currentTimeMillis() - start) / 60000 + " minutes");
-    }
-
-    // todo 发帖通过rabbitmq通知
-//    @RabbitListener(queues = MqConst.POST_NEW)
-    public void handlePostUpdate(String message) {
-        System.out.println("Received post update notification: " + message);
-        // Add logic to handle the post update notification
     }
 
     /**
@@ -247,6 +241,10 @@ public class ContentBasedRecommendationModel {
                 termFrequency.put(token, tf * idf); // 一个词语的TF-IDF向量值
             }
         }
+
+        VectorMap.VectorMap = documentFrequency;
+        // 向量维度
+        System.out.println("向量维度：" + VectorMap.count());
 
         return tfidfVectors;
     }

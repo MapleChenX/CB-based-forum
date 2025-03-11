@@ -10,7 +10,7 @@ import com.example.mapper.AccountDetailsMapper;
 import com.example.mapper.AccountMapper;
 import com.example.mapper.AccountPrivacyMapper;
 import com.example.service.AccountService;
-import com.example.utils.Const;
+import com.example.common.Const;
 import com.example.utils.FlowUtils;
 import jakarta.annotation.Resource;
 import org.springframework.amqp.core.AmqpTemplate;

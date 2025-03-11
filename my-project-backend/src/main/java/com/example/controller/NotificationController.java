@@ -3,7 +3,7 @@ package com.example.controller;
 import com.example.entity.RestBean;
 import com.example.entity.vo.response.NotificationVO;
 import com.example.service.NotificationService;
-import com.example.utils.Const;
+import com.example.common.Const;
 import jakarta.annotation.Resource;
 import jakarta.validation.constraints.Min;
 import org.springframework.web.bind.annotation.*;

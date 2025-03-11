@@ -1,7 +1,7 @@
 package com.example.filter;
 
 import com.alibaba.fastjson2.JSONObject;
-import com.example.utils.Const;
+import com.example.common.Const;
 import com.example.utils.SnowflakeIdGenerator;
 import jakarta.annotation.Resource;
 import jakarta.servlet.FilterChain;

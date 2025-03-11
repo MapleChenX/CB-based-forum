@@ -1,6 +1,6 @@
 package com.example.config;
 
-import com.example.utils.Const;
+import com.example.common.Const;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.context.annotation.Bean;
