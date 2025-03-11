@@ -27,7 +27,8 @@ if not es.indices.exists(index=index_name):
             "properties": {
                 "title": {"type": "text"},
                 "content": {"type": "text"},
-                "id": {"type": "integer"}
+                "id": {"type": "integer"},
+                "is_deleted": {"type": "boolean", "null_value": False}  # 添加删除标识
             }
         }
     })

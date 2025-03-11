@@ -436,15 +436,31 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         SearchRequest searchRequest = new SearchRequest.Builder()
                 .index("forum_posts")
                 .query(q -> q
-                        .match(m -> m
-                                .field("title")
-                                .field("content")
-                                .query(keyword)
+                        .bool(b -> b
+                                .must(m -> m
+                                        .match(ma -> ma
+                                                .field("title")
+                                                .query(keyword)
+                                        )
+                                )
+                                .must(m -> m
+                                        .match(ma -> ma
+                                                .field("content")
+                                                .query(keyword)
+                                        )
+                                )
+                                .filter(f -> f
+                                        .term(t -> t
+                                                .field("is_deleted")
+                                                .value(false) // 确保只返回未删除的文档
+                                        )
+                                )
                         )
                 )
                 .from((page - 1) * offset)  // Pagination
                 .size(offset)
                 .build();
+
 
         // 2-根据ids查询mysql
         try {
