@@ -31,6 +31,10 @@ public class ESServiceImpl implements ESService {
     public void insertVector(String content) {
         VectorInsert vectorInsert = JSONObject.parseObject(content, VectorInsert.class);
         try {
+            if (isExists(vectorInsert.getId())) {
+                System.out.println("ES中已存在该id，不插入！" + vectorInsert.getId());
+                return;
+            }
             insertPostWithId(vectorInsert.getId(), vectorInsert.getTitle(), vectorInsert.getContent(), vectorInsert.getVector());
             System.out.println("插入成功！" + vectorInsert.getId());
         } catch (IOException e) {
@@ -89,7 +93,6 @@ public class ESServiceImpl implements ESService {
     }
 
     public void insertPostWithId(String id, String title, String content, List<Double> vector) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
         client.index(i -> i
                 .index(Const.ES_INDEX_FORUM_POSTS)
                 .id(id)
@@ -99,6 +102,10 @@ public class ESServiceImpl implements ESService {
                         "embedding", vector
                 ))
         );
+    }
+
+    public boolean isExists(String id) throws IOException {
+        return client.exists(e -> e.index(Const.ES_INDEX_FORUM_POSTS).id(id)).value();
     }
 
 }
