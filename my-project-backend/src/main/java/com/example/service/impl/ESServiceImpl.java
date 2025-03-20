@@ -75,20 +75,20 @@ public class ESServiceImpl implements ESService {
         }
     }
 
-    void createInferencePipeline() throws IOException {
-        client.ingest().putPipeline(p -> p
-                .id("text_embedding_pipeline")
-                .processors(pr -> pr
-                        .inference(i -> i
-                                .modelId("my_bert_model")  // 你的 BERT 模型
-                                .inferenceConfig(c -> c.textEmbedding(te -> te))
-                                .fieldMap(f -> f
-                                        .put("content", "embedding") // content 转 embedding
-                                )
-                        )
-                )
-        );
-    }
+//    void createInferencePipeline() throws IOException {
+//        client.ingest().putPipeline(p -> p
+//                .id("text_embedding_pipeline")
+//                .processors(pr -> pr
+//                        .inference(i -> i
+//                                .modelId("my_bert_model")  // 你的 BERT 模型
+//                                .inferenceConfig(c -> c.textEmbedding(te -> te))
+//                                .fieldMap(f -> f
+//                                        .put("content", "embedding") // content 转 embedding
+//                                )
+//                        )
+//                )
+//        );
+//    }
 
     void insertPostWithId(String id, String title, String content) throws IOException {
         client.index(i -> i
@@ -102,59 +102,60 @@ public class ESServiceImpl implements ESService {
         );
     }
 
-    void searchSimilarPosts(float[] queryVector) throws IOException {
-        SearchResponse<Map> response = client.search(s -> s
-                        .index("forum_posts")
-                        .query(q -> q
-                                .knn(knn -> knn
-                                        .field("embedding")
-                                        .queryVector(queryVector) // 你的搜索向量
-                                        .k(5)
-                                        .numCandidates(100)
-                                )
-                        ),
-                Map.class
-        );
+//    void searchSimilarPosts(float[] queryVector) throws IOException {
+//        SearchResponse<Map> response = client.search(s -> s
+//                        .index("forum_posts")
+//                        .query(q -> q
+//                                .knn(knn -> knn
+//                                        .field("embedding")
+//                                        .queryVector(queryVector) // 你的搜索向量
+//                                        .k(5)
+//                                        .numCandidates(100)
+//                                )
+//                        ),
+//                Map.class
+//        );
+//
+//        response.hits().hits().forEach(hit -> {
+//            System.out.println(hit.source());
+//        });
+//    }
 
-        response.hits().hits().forEach(hit -> {
-            System.out.println(hit.source());
-        });
-    }
-
-    public void searchByPostId(String postId) throws IOException {
-        // 获取指定帖子 ID 的 embedding 向量
-        var getResponse = client.get(g -> g
-                .index("forum_posts")
-                .id(postId), Map.class);
-
-        Map<String, Object> source = getResponse.source();
-        if (source != null) {
-            float[] embedding = (float[]) source.get("embedding");
-
-            // 余弦相似度查询
-            ScriptScoreFunction scriptScoreFunction = new ScriptScoreFunction.Builder()
-                    .script(s -> s
-                            .source("cosineSimilarity(params.queryVector, 'embedding') + 1.0")  // 计算余弦相似度
-                            .params(Map.of("queryVector", JsonData.of(embedding)))  // 将查询向量传递给脚本
-                    ).build();
-
-            FunctionScoreQuery functionScoreQuery = new FunctionScoreQuery.Builder()
-                    .query(QueryBuilders.matchAll())  // 查询所有文档
-                    .functions(f -> f.scriptScore(scriptScoreFunction))  // 应用 script_score 函数
-                    .build();
-
-            SearchRequest searchRequest = new SearchRequest.Builder()
-                    .index("forum_posts")
-                    .query(Query.of(q -> q.functionScore(functionScoreQuery)))  // 应用 KNN 查询
-                    .build();
-
-            SearchResponse<Map> response = client.search(searchRequest, Map.class);
-
-            // 输出搜索结果
-            response.hits().hits().forEach(hit -> {
-                System.out.println(hit.source());
-            });
-        }
+//    public void searchByPostId(String postId) throws IOException {
+//        // 获取指定帖子 ID 的 embedding 向量
+//        var getResponse = client.get(g -> g
+//                .index("forum_posts")
+//                .id(postId), Map.class);
+//
+//        Map<String, Object> source = getResponse.source();
+//        if (source != null) {
+//            float[] embedding = (float[]) source.get("embedding");
+//
+//            // 余弦相似度查询
+//            ScriptScoreFunction scriptScoreFunction = new ScriptScoreFunction.Builder()
+//                    .script(s -> s
+//                            .source("cosineSimilarity(params.queryVector, 'embedding') + 1.0")  // 计算余弦相似度
+//                            .params(Map.of("queryVector", JsonData.of(embedding)))  // 将查询向量传递给脚本
+//                    ).build();
+//
+//            FunctionScoreQuery functionScoreQuery = new FunctionScoreQuery.Builder()
+//                    .query(QueryBuilders.matchAll())  // 查询所有文档
+//                    .functions(f -> f.scriptScore(scriptScoreFunction))  // 应用 script_score 函数
+//                    .build();
+//
+//            SearchRequest searchRequest = new SearchRequest.Builder()
+//                    .index("forum_posts")
+//                    .query(Query.of(q -> q.functionScore(functionScoreQuery)))  // 应用 KNN 查询
+//                    .build();
+//
+//            SearchResponse<Map> response = client.search(searchRequest, Map.class);
+//
+//            // 输出搜索结果
+//            response.hits().hits().forEach(hit -> {
+//                System.out.println(hit.source());
+//            });
+//        }
+//    }
 
 
 

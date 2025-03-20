@@ -119,13 +119,13 @@ public class ContentBasedRecommendationModel {
         tfidfVectors = calculateTFIDF(ContentBasedRecommendationModel.postContents);
 
         // 导出tfidf向量准备降维
-        try {
-            System.out.println("开始导出！");
-//            exportTFIDF();
-            exportTFIDFToParquet("tfidf_vectors.parquet");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            System.out.println("开始导出！");
+////            exportTFIDF();
+//            exportTFIDFToParquet("tfidf_vectors.parquet");
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         // 同步到redis
 //        boolean hasPostContent = Boolean.TRUE.equals(template.hasKey(Const.POST_CONTENT_BUCKET))
