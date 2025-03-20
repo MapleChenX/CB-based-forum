@@ -21,13 +21,13 @@ spring:
     username: root
     password: 111111
     driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      pool-name: MySQLHikariPool
+#    hikari:
+#      pool-name: MySQLHikariPool
 #    ds2:
-#      url: jdbc:postgresql://localhost:5432/tfidf?currentSchema=public
-#      username: postgres
-#      password: 111111
-#      driver-class-name: org.postgresql.Driver
+#    url: jdbc:postgresql://localhost:5432/tfidf?currentSchema=public
+#    username: postgres
+#    password: 111111
+#    driver-class-name: org.postgresql.Driver
 #      hikari:
 #        pool-name: PostgresHikariPool
 
@@ -58,3 +58,7 @@ spring:
     password: 'minioadmin'
   weather:
     key: 16eb85939a3249589fce78da9a93c3fa
+
+milvus:
+  host: localhost
+  port: 19530

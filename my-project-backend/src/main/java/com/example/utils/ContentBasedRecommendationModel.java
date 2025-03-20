@@ -1,5 +1,6 @@
 package com.example.utils;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.example.common.VectorMap;
 import com.example.entity.UserInteraction;
 import com.example.service.InteractService;
@@ -11,12 +12,29 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huaban.analysis.jieba.JiebaSegmenter;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.parquet.avro.AvroParquetWriter;
+import org.apache.parquet.hadoop.ParquetFileWriter;
+import org.apache.parquet.hadoop.ParquetWriter;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Component
@@ -56,13 +74,58 @@ public class ContentBasedRecommendationModel {
         updateTFIDF();
     }
 
-    @Scheduled(fixedRate = 60 * 60 * 1000) // 每1小时执行一次
+//    @Scheduled(fixedRate = 60 * 60 * 1000) // 每1小时执行一次
     public void updateTFIDF() {
         long start = System.currentTimeMillis();
         System.out.println("Updating tfidfVectors...");
         postContents.clear();
-        topicService.list().forEach(topic -> postContents.put(topic.getId(), optimizePostContent(topic.getContent())));
+        HttpClient client = HttpClient.newHttpClient();
+
+        Map<String, String> data = new HashMap<>();
+        AtomicInteger count = new AtomicInteger();
+//        System.out.println("转移到python！");
+
+        topicService.list().forEach(topic -> {
+            String optimizePostContent = optimizePostContent(topic.getContent());
+            postContents.put(topic.getId(), optimizePostContent);
+
+//            data.put("id", String.valueOf(topic.getId()));
+//            data.put("text", optimizePostContent);
+//
+//            if (data.size() >= 500) {
+//                String jsonString = JSONObject.toJSONString(data);
+//
+//                HttpRequest request = HttpRequest.newBuilder()
+//                        .uri(URI.create("http://127.0.0.1:8000/text2vector"))
+//                        .header("Content-Type", "application/json")
+//                        .POST(HttpRequest.BodyPublishers.ofString(jsonString))
+//                        .build();
+//
+//                try {
+//                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+//                    if (response.statusCode() == 200) {
+//                        System.out.println( count.incrementAndGet() + "批发送成功！");
+//                        data.clear();
+//                    } else {
+//                        System.out.println("Error: " + topic.getId());
+//                    }
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+
+        });
+
         tfidfVectors = calculateTFIDF(ContentBasedRecommendationModel.postContents);
+
+        // 导出tfidf向量准备降维
+        try {
+            System.out.println("开始导出！");
+//            exportTFIDF();
+            exportTFIDFToParquet("tfidf_vectors.parquet");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         // 同步到redis
 //        boolean hasPostContent = Boolean.TRUE.equals(template.hasKey(Const.POST_CONTENT_BUCKET))
@@ -308,4 +371,101 @@ public class ContentBasedRecommendationModel {
         double timeDecay = Math.exp(-timeDiff / (double) TIME_DECAY_FACTOR);
         return typeWeight * timeDecay;
     }
+    public void exportTFIDF() throws IOException {
+        // 1️⃣ 构建全局词汇表（保证所有帖子向量维度一致）
+        Set<String> globalVocabulary = new TreeSet<>();
+        for (Map<String, Double> vector : tfidfVectors.values()) {
+            globalVocabulary.addAll(vector.keySet());
+        }
+        List<String> vocabList = new ArrayList<>(globalVocabulary);  // 确保顺序固定
+
+        // 2️⃣ 使用 BufferedWriter 提高写入效率
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("tfidf_vectors.csv"))) {
+            String header = String.join(",", vocabList);
+            writer.write("docId," + header + "\n");
+
+            // 3️⃣ 使用批量写入方法
+            StringBuilder sb = new StringBuilder();
+            int count = 0;  // 记录当前累积的行数
+
+            for (Map.Entry<Integer, Map<String, Double>> entry : tfidfVectors.entrySet()) {
+                int docId = entry.getKey();
+                Map<String, Double> vector = entry.getValue();
+
+                sb.append(docId).append(",");
+
+                // 按 vocabList 顺序写入 TF-IDF 值，确保维度固定
+                for (String word : vocabList) {
+                    sb.append(vector.getOrDefault(word, 0.0)).append(",");
+                }
+
+                sb.append("\n");
+                count++;
+
+                // 每 500 条批量写入一次
+                if (count % 100 == 0) {
+                    writer.write(sb.toString());
+                    writer.flush();
+                    sb.setLength(0); // 清空 StringBuilder
+                    System.out.println("批量写入 100 条数据！");
+                }
+            }
+
+            // 最后剩余的数据
+            if (sb.length() > 0) {
+                writer.write(sb.toString());
+                writer.flush();
+            }
+
+            System.out.println("TF-IDF 数据已全部导出！");
+        }
+    }
+
+
+    public void exportTFIDFToParquet(String outputFile) throws IOException {
+        // 1️⃣ 构建全局词汇表（保证所有帖子向量维度一致）
+        Set<String> globalVocabulary = new TreeSet<>();
+        for (Map<String, Double> vector : tfidfVectors.values()) {
+            globalVocabulary.addAll(vector.keySet());
+        }
+        List<String> vocabList = new ArrayList<>(globalVocabulary);
+
+        // 2️⃣ 定义 Avro Schema
+        StringBuilder schemaStr = new StringBuilder("{ \"type\": \"record\", \"name\": \"TFIDFRecord\", \"fields\": [");
+        schemaStr.append("{\"name\": \"docId\", \"type\": \"int\"},");
+        for (String word : vocabList) {
+            schemaStr.append("{\"name\": \"").append(word).append("\", \"type\": \"float\"},");
+        }
+        schemaStr.deleteCharAt(schemaStr.length() - 1);  // 删除最后一个逗号
+        schemaStr.append("]}");
+
+        Schema schema = new Schema.Parser().parse(schemaStr.toString());
+
+        // 3️⃣ 创建 Parquet Writer
+        Path path = Paths.get(outputFile);
+        try (ParquetWriter<GenericRecord> writer = AvroParquetWriter.<GenericRecord>builder(new org.apache.hadoop.fs.Path(path.toString()))
+                .withSchema(schema)
+                .withCompressionCodec(CompressionCodecName.SNAPPY)  // 使用 Snappy 压缩
+                .withWriteMode(ParquetFileWriter.Mode.OVERWRITE)
+                .build()) {
+
+            // 4️⃣ 写入数据
+            for (Map.Entry<Integer, Map<String, Double>> entry : tfidfVectors.entrySet()) {
+                int docId = entry.getKey();
+                Map<String, Double> vector = entry.getValue();
+
+                GenericRecord record = new GenericData.Record(schema);
+                record.put("docId", docId);
+
+                for (String word : vocabList) {
+                    record.put(word, vector.getOrDefault(word, 0.0).floatValue());  // 转为 float 存储
+                }
+
+                writer.write(record);
+            }
+        }
+
+        System.out.println("✅ TF-IDF 数据已导出到 Parquet 文件：" + outputFile);
+    }
+
 }
