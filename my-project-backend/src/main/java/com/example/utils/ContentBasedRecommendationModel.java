@@ -23,6 +23,8 @@ import org.apache.parquet.hadoop.ParquetFileWriter;
 import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -37,7 +39,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
-public class ContentBasedRecommendationModel {
+public class ContentBasedRecommendationModel implements ApplicationRunner {
 
     public static final Map<Integer, String> postContents = new HashMap<>();
 
@@ -64,8 +66,11 @@ public class ContentBasedRecommendationModel {
     @Resource
     private RabbitMQUtil rabbitMQUtil;
 
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
+        updateTFIDF();
+    }
 
-    @Scheduled(initialDelay = 2000, fixedRate = Long.MAX_VALUE)
     public void updateTFIDF() {
         WebClient webClient = WebClient.create("http://127.0.0.1:8000");
         long start = System.currentTimeMillis();
@@ -96,7 +101,6 @@ public class ContentBasedRecommendationModel {
                 vectorInsert.setVector(resp.getVector());
             }
             rabbitMQUtil.sendMessage(Const.INSERT_VECTOR_QUEUE, JSONObject.toJSONString(vectorInsert));
-//                esService.insertPostWithId(topic.getId().toString(), title, optimizePostContent, resp.getVector());
             System.out.println("send to mq successfully!" + topic.getId());
         });
 
