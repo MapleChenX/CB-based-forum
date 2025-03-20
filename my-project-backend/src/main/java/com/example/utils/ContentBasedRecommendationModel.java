@@ -1,8 +1,11 @@
 package com.example.utils;
 
+import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.example.common.VectorMap;
 import com.example.entity.UserInteraction;
+import com.example.entity.vo.response.text2vectorResp;
+import com.example.service.ESService;
 import com.example.service.InteractService;
 import com.example.service.TopicService;
 import com.example.tfidf.TFIDF;
@@ -23,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -36,6 +40,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Component
 public class ContentBasedRecommendationModel {
@@ -68,6 +73,9 @@ public class ContentBasedRecommendationModel {
     @Resource
     private TFIDF tfidf;
 
+    @Resource
+    private ESService esService;
+
 
     @PostConstruct
     public void init() {
@@ -76,43 +84,37 @@ public class ContentBasedRecommendationModel {
 
 //    @Scheduled(fixedRate = 60 * 60 * 1000) // 每1小时执行一次
     public void updateTFIDF() {
+        WebClient webClient = WebClient.create("http://127.0.0.1:8000");
         long start = System.currentTimeMillis();
         System.out.println("Updating tfidfVectors...");
         postContents.clear();
         HttpClient client = HttpClient.newHttpClient();
 
-        Map<String, String> data = new HashMap<>();
-        AtomicInteger count = new AtomicInteger();
-//        System.out.println("转移到python！");
-
         topicService.list().forEach(topic -> {
             String optimizePostContent = optimizePostContent(topic.getContent());
+            String title = topic.getTitle();
             postContents.put(topic.getId(), optimizePostContent);
 
-//            data.put("id", String.valueOf(topic.getId()));
-//            data.put("text", optimizePostContent);
-//
-//            if (data.size() >= 500) {
-//                String jsonString = JSONObject.toJSONString(data);
-//
-//                HttpRequest request = HttpRequest.newBuilder()
-//                        .uri(URI.create("http://127.0.0.1:8000/text2vector"))
-//                        .header("Content-Type", "application/json")
-//                        .POST(HttpRequest.BodyPublishers.ofString(jsonString))
-//                        .build();
-//
-//                try {
-//                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-//                    if (response.statusCode() == 200) {
-//                        System.out.println( count.incrementAndGet() + "批发送成功！");
-//                        data.clear();
-//                    } else {
-//                        System.out.println("Error: " + topic.getId());
-//                    }
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//            }
+            Map<String, String> request = new HashMap<>();
+            request.put("title", title);
+            request.put("content", optimizePostContent);
+
+            text2vectorResp resp = webClient.post()
+                    .uri("/text2vector")
+                    .bodyValue(request)
+                    .retrieve()
+                    .bodyToMono(text2vectorResp.class)
+                    .block();
+
+            try {
+                esService.insertPostWithId(topic.getId().toString(), title, optimizePostContent, resp.getVector());
+                System.out.println("insert es vector successfully!" + topic.getId());
+            } catch (IOException e) {
+                System.out.println("insert es vector wrong!");
+                throw new RuntimeException(e);
+            }
+
+
 
         });
 
