@@ -1,9 +1,10 @@
 package com.example.utils;
 
-import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.example.common.Const;
 import com.example.common.VectorMap;
 import com.example.entity.UserInteraction;
+import com.example.entity.VectorInsert;
 import com.example.entity.vo.response.text2vectorResp;
 import com.example.service.ESService;
 import com.example.service.InteractService;
@@ -13,7 +14,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.huaban.analysis.jieba.JiebaSegmenter;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
@@ -31,16 +31,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @Component
 public class ContentBasedRecommendationModel {
@@ -68,27 +62,15 @@ public class ContentBasedRecommendationModel {
     private TopicService topicService;
 
     @Resource
-    private StringRedisTemplate template;
-
-    @Resource
-    private TFIDF tfidf;
-
-    @Resource
-    private ESService esService;
+    private RabbitMQUtil rabbitMQUtil;
 
 
-    @PostConstruct
-    public void init() {
-        updateTFIDF();
-    }
-
-//    @Scheduled(fixedRate = 60 * 60 * 1000) // 每1小时执行一次
+    @Scheduled(initialDelay = 2000, fixedRate = Long.MAX_VALUE)
     public void updateTFIDF() {
         WebClient webClient = WebClient.create("http://127.0.0.1:8000");
         long start = System.currentTimeMillis();
         System.out.println("Updating tfidfVectors...");
         postContents.clear();
-        HttpClient client = HttpClient.newHttpClient();
 
         topicService.list().forEach(topic -> {
             String optimizePostContent = optimizePostContent(topic.getContent());
@@ -106,16 +88,16 @@ public class ContentBasedRecommendationModel {
                     .bodyToMono(text2vectorResp.class)
                     .block();
 
-            try {
-                esService.insertPostWithId(topic.getId().toString(), title, optimizePostContent, resp.getVector());
-                System.out.println("insert es vector successfully!" + topic.getId());
-            } catch (IOException e) {
-                System.out.println("insert es vector wrong!");
-                throw new RuntimeException(e);
+            VectorInsert vectorInsert = new VectorInsert();
+            vectorInsert.setId(topic.getId().toString());
+            vectorInsert.setTitle(title);
+            vectorInsert.setContent(optimizePostContent);
+            if (resp != null) {
+                vectorInsert.setVector(resp.getVector());
             }
-
-
-
+            rabbitMQUtil.sendMessage(Const.INSERT_VECTOR_QUEUE, JSONObject.toJSONString(vectorInsert));
+//                esService.insertPostWithId(topic.getId().toString(), title, optimizePostContent, resp.getVector());
+            System.out.println("send to mq successfully!" + topic.getId());
         });
 
         tfidfVectors = calculateTFIDF(ContentBasedRecommendationModel.postContents);

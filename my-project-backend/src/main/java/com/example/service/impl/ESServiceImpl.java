@@ -1,22 +1,14 @@
 package com.example.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.KnnQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.FunctionScoreQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
-import co.elastic.clients.elasticsearch._types.query_dsl.ScriptScoreFunction;
-import co.elastic.clients.elasticsearch.core.GetResponse;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.json.JsonData;
 import com.alibaba.fastjson2.JSONObject;
-import com.alibaba.fastjson2.TypeReference;
 import com.example.common.Const;
+import com.example.entity.VectorInsert;
 import com.example.service.ESService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -35,6 +27,16 @@ public class ESServiceImpl implements ESService {
         recreateIndex();
     }
 
+    @RabbitListener(queues = Const.INSERT_VECTOR_QUEUE)
+    public void insertVector(String content) {
+        VectorInsert vectorInsert = JSONObject.parseObject(content, VectorInsert.class);
+        try {
+            insertPostWithId(vectorInsert.getId(), vectorInsert.getTitle(), vectorInsert.getContent(), vectorInsert.getVector());
+            System.out.println("插入成功！" + vectorInsert.getId());
+        } catch (IOException e) {
+            System.out.println("insert into es wrong! id: " + vectorInsert.getId());
+        }
+    }
 
     void recreateIndex() throws IOException {
 //        client.indices().delete(d -> d.index(Const.ES_INDEX_FORUM_POSTS));  // 删除索引

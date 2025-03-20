@@ -33,4 +33,5 @@ public final class Const {
     public final static String POST_CONTENT_BUCKET = "post:content:";
     public final static String FORUM_POSTS_MQ = "forum:posts:MQ";
     public final static String ES_INDEX_FORUM_POSTS = "forum_posts";
+    public final static String INSERT_VECTOR_QUEUE = "insertVector";
 }

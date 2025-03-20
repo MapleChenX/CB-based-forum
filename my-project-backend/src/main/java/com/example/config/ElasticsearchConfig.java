@@ -18,6 +18,19 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 public class ElasticsearchConfig {
 
+
+//    @Bean
+//    public ElasticsearchClient elasticsearchClient() {
+//        RestClient restClient = RestClient.builder(new HttpHost("localhost", 9200, "http")).build();
+//
+//        ElasticsearchTransport transport = new RestClientTransport(
+//                restClient,
+//                new JacksonJsonpMapper());
+//
+//        log.info("Elasticsearch client has started!");
+//        return new ElasticsearchClient(transport);
+//    }
+
     @Bean
     public ElasticsearchClient elasticsearchClient() {
         BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
