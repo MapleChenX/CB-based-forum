@@ -4,8 +4,11 @@ import com.alibaba.fastjson2.JSONObject;
 import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -13,43 +16,40 @@ import org.springframework.stereotype.Component;
 public class RabbitMQUtil {
 
     private final RabbitTemplate rabbitTemplate;
+    private final RabbitAdmin rabbitAdmin;
 
     @Autowired
-    public RabbitMQUtil(RabbitTemplate rabbitTemplate) {
+    public RabbitMQUtil(RabbitTemplate rabbitTemplate, RabbitAdmin rabbitAdmin) {
         this.rabbitTemplate = rabbitTemplate;
+        this.rabbitAdmin = rabbitAdmin;
+    }
+
+    @Bean
+    public RabbitAdmin rabbitAdmin(ConnectionFactory connectionFactory) {
+        return new RabbitAdmin(connectionFactory);
     }
 
     /**
      * 发送消息到指定的队列
      * @param queueName 队列名称
      * @param msg 消息对象
-     * @throws Exception
      */
-    public void sendMessage(String queueName, Object msg)  {
+    public void sendMessage(String queueName, Object msg) {
         String jsonMessage = JSONObject.toJSONString(msg);
         sendMessage(queueName, jsonMessage);
     }
 
-    public void sendMessage(String queueName, String msg)  {
-        Channel channel = null;
+    /**
+     * 发送消息到指定的队列
+     * @param queueName 队列名称
+     * @param msg 消息字符串
+     */
+    public void sendMessage(String queueName, String msg) {
         try {
-            // 获取连接并创建channel
-            channel = rabbitTemplate.getConnectionFactory().createConnection().createChannel(false);
-
-            // 判断队列是否存在
-            try {
-                channel.queueDeclarePassive(queueName);  // 检查队列是否存在
-            } catch (Exception e) {
-                // 如果队列不存在，则声明队列
-                channel.queueDeclare(queueName, true, false, false, null);  // 随用随创建
-            }
-
-            // 发送消息
+            rabbitAdmin.declareQueue(new Queue(queueName, true, false, false));
             rabbitTemplate.convertAndSend(queueName, msg);
         } catch (Exception e) {
-            log.error("创建队列失败:{}", queueName);
+            log.error("发送消息失败: {}, 错误: {}", queueName, e.getMessage());
         }
-
-        rabbitTemplate.convertAndSend(queueName, msg);
     }
 }

@@ -9,13 +9,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MilvusConfig {
 
-    @Bean
-    public MilvusServiceClient milvusClient() {
-        return new MilvusServiceClient(
-                ConnectParam.newBuilder()
-                        .withHost("localhost") // Milvus 服务器地址
-                        .withPort(19530) // Milvus 默认端口
-                        .build()
-        );
-    }
+//    @Bean
+//    public MilvusServiceClient milvusClient() {
+//        return new MilvusServiceClient(
+//                ConnectParam.newBuilder()
+//                        .withHost("localhost") // Milvus 服务器地址
+//                        .withPort(19530) // Milvus 默认端口
+//                        .build()
+//        );
+//    }
 }

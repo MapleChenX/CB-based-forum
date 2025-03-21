@@ -1,15 +1,9 @@
 package com.example.utils;
 
-import com.alibaba.fastjson2.JSONObject;
-import com.example.common.Const;
 import com.example.common.VectorMap;
 import com.example.entity.UserInteraction;
-import com.example.entity.VectorInsert;
-import com.example.entity.vo.response.text2vectorResp;
-import com.example.service.ESService;
 import com.example.service.InteractService;
 import com.example.service.TopicService;
-import com.example.tfidf.TFIDF;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,8 +19,6 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -82,26 +74,26 @@ public class ContentBasedRecommendationModel implements ApplicationRunner {
             String title = topic.getTitle();
             postContents.put(topic.getId(), optimizePostContent);
 
-            Map<String, String> request = new HashMap<>();
-            request.put("title", title);
-            request.put("content", optimizePostContent);
-
-            text2vectorResp resp = webClient.post()
-                    .uri("/text2vector")
-                    .bodyValue(request)
-                    .retrieve()
-                    .bodyToMono(text2vectorResp.class)
-                    .block();
-
-            VectorInsert vectorInsert = new VectorInsert();
-            vectorInsert.setId(topic.getId().toString());
-            vectorInsert.setTitle(title);
-            vectorInsert.setContent(optimizePostContent);
-            if (resp != null) {
-                vectorInsert.setVector(resp.getVector());
-            }
-            rabbitMQUtil.sendMessage(Const.INSERT_VECTOR_QUEUE, JSONObject.toJSONString(vectorInsert));
-            System.out.println("send to mq successfully!" + topic.getId());
+//            Map<String, String> request = new HashMap<>();
+//            request.put("title", title);
+//            request.put("content", optimizePostContent);
+//
+//            text2vectorResp resp = webClient.post()
+//                    .uri("/text2vector")
+//                    .bodyValue(request)
+//                    .retrieve()
+//                    .bodyToMono(text2vectorResp.class)
+//                    .block();
+//
+//            VectorInsert vectorInsert = new VectorInsert();
+//            vectorInsert.setId(topic.getId().toString());
+//            vectorInsert.setTitle(title);
+//            vectorInsert.setContent(optimizePostContent);
+//            if (resp != null) {
+//                vectorInsert.setVector(resp.getVector());
+//            }
+//            rabbitMQUtil.sendMessage(Const.INSERT_VECTOR_QUEUE, JSONObject.toJSONString(vectorInsert));
+//            System.out.println("send to mq successfully!" + topic.getId());
         });
 
         tfidfVectors = calculateTFIDF(ContentBasedRecommendationModel.postContents);
