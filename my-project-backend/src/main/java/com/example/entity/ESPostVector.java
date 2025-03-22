@@ -5,10 +5,9 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class VectorInsert {
+public class ESPostVector {
     private String id;
     private String title;
     private String content;
-    private List<Double> vector;
-
+    private List<Double> embedding;
 }

@@ -85,7 +85,7 @@ public class ContentBasedRecommendationModel implements ApplicationRunner {
 //                    .bodyToMono(text2vectorResp.class)
 //                    .block();
 //
-//            VectorInsert vectorInsert = new VectorInsert();
+//            ESPostVector vectorInsert = new ESPostVector();
 //            vectorInsert.setId(topic.getId().toString());
 //            vectorInsert.setTitle(title);
 //            vectorInsert.setContent(optimizePostContent);
