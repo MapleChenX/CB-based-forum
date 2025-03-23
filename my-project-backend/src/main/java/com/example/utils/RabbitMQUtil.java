@@ -9,6 +9,7 @@ import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -19,7 +20,7 @@ public class RabbitMQUtil {
     private final RabbitAdmin rabbitAdmin;
 
     @Autowired
-    public RabbitMQUtil(RabbitTemplate rabbitTemplate, RabbitAdmin rabbitAdmin) {
+    public RabbitMQUtil(@Lazy RabbitTemplate rabbitTemplate, @Lazy RabbitAdmin rabbitAdmin) {
         this.rabbitTemplate = rabbitTemplate;
         this.rabbitAdmin = rabbitAdmin;
     }

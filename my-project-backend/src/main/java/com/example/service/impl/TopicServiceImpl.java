@@ -28,6 +28,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -74,6 +75,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     ElasticsearchClient elasticsearchClient;
 
     @Resource
+    @Lazy
     RabbitMQUtil mqUtil;
 
     private Set<Integer> types = null;

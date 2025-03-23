@@ -16,6 +16,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -113,6 +114,7 @@ public class ESServiceImpl implements ESService {
     @Override
     public List<String> getSimilarPostsById(String id) {
         try {
+            // 获取向量
             GetResponse<ESPostVector> response = client.get(g -> g
                             .index(Const.ES_INDEX_FORUM_POSTS)
                             .id(id),
@@ -123,25 +125,25 @@ public class ESServiceImpl implements ESService {
                 return null;
             }
 
-            List<Double> vector = response.source().getEmbedding();
+            List<Float> vector = response.source().getEmbedding()
+                    .stream()
+                    .map(Double::floatValue)
+                    .toList();
 
-            SearchResponse<ESPostVector> response = client.search(s -> s
+            // 向量查询
+            SearchResponse<ESPostVector> resp = client.search(s -> s
                             .index(Const.ES_INDEX_FORUM_POSTS)
-                            .query(q -> q
-                                    .scriptScore(ss -> ss
-                                            .query(qq -> qq.matchAll(m -> m)) // 先匹配所有帖子
-                                            .script(script -> script
-                                                    .source("cosineSimilarity(params.queryVector, 'embedding') + 1.0")
-                                                    .params("queryVector", vector)
-                                            )
-                                    )
+                            .knn(k -> k
+                                    .field("embedding")
+                                    .queryVector(vector)
+                                    .k(10)
+                                    .numCandidates(100)
                             )
-                            .size(10)
-                            .sourceFields("id"),
+                            .size(10),
                     ESPostVector.class
             );
 
-            return response.hits().hits().stream()
+            return resp.hits().hits().stream()
                     .map(hit -> {
                         if (hit.source() == null) {
                             return null;
@@ -150,12 +152,9 @@ public class ESServiceImpl implements ESService {
                     })
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
-
-
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         return null;
     }
 

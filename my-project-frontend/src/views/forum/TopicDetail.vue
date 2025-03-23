@@ -64,12 +64,20 @@ const getSimilarRecommendation = () => {
     })
 }
 
+const getSimilarRecommendationV2 = () => {
+    // 清空列表
+    topics.list = []
+    get(`/api/recommend/similar/v2/${tid.value}`, data => {
+        topics.list = data
+    })
+}
+
 const init = () => get(`api/forum/topic?tid=${tid.value}`, data => {
     topic.data = data // 加载帖子内容
     topic.like = data.interact.like
     topic.collect = data.interact.collect
     loadComments(1) // 加载评论
-    getSimilarRecommendation() // 加载相关推荐
+    getSimilarRecommendationV2() // 加载相关推荐
 })
 
 onMounted(() => {

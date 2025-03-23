@@ -11,5 +11,6 @@ public interface RecommendService {
     List<Integer> recommendSimilarPostIds(Integer uid, Integer topicId);
 
     List<TopicPreviewVO> recommendSimilarPosts(Integer uid, Integer topicId);
+    List<TopicPreviewVO> recommendSimilarPostsV2(Integer uid, Integer topicId);
 
 }
