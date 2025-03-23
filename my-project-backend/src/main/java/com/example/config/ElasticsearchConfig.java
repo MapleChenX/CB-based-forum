@@ -20,17 +20,6 @@ import org.springframework.context.annotation.Configuration;
 public class ElasticsearchConfig {
 
 
-//    @Bean
-//    public ElasticsearchClient createClient() {
-//        // 创建 RestClient
-//        RestClient restClient = RestClient.builder(new HttpHost("localhost", 9200, "http")).build();
-//
-//        // 创建 Transport
-//        ElasticsearchTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
-//
-//        return new ElasticsearchClient(transport);
-//    }
-
     @Bean
     public ElasticsearchClient elasticsearchClient() {
         BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();

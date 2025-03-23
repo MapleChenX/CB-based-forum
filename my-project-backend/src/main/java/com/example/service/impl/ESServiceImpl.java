@@ -5,6 +5,7 @@ import co.elastic.clients.elasticsearch.core.GetRequest;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.SearchTemplateRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.alibaba.fastjson2.JSONObject;
 import com.example.common.Const;
 import com.example.entity.ESPostVector;
@@ -54,8 +55,6 @@ public class ESServiceImpl implements ESService {
     }
 
     void recreateIndex() throws IOException {
-//        client.indices().delete(d -> d.index(Const.ES_INDEX_FORUM_POSTS));  // 删除索引
-//        createIndex();  // 重新创建索引
         createIndexIfNotExists();  // 重新创建索引
     }
 
@@ -143,10 +142,7 @@ public class ESServiceImpl implements ESService {
             );
 
             return resp.hits().hits().stream()
-                    .map(hit -> {
-                        log.info("查询到相似向量，id：" + hit.id());
-                        return hit.id();
-                    })
+                    .map(Hit::id)
                     .filter(Objects::nonNull)
                     .toList();
         } catch (Exception e) {
