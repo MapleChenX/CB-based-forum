@@ -11,6 +11,7 @@ import com.example.entity.ESPostVector;
 import com.example.service.ESService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.stat.descriptive.summary.Product;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class ESServiceImpl implements ESService {
 
     // indices index get search update delete
@@ -125,12 +127,9 @@ public class ESServiceImpl implements ESService {
                 return null;
             }
 
-            List<Float> vector = response.source().getEmbedding()
-                    .stream()
-                    .map(Double::floatValue)
-                    .toList();
+            List<Double> vector = response.source().getEmbedding();
 
-            // 向量查询
+            // 相似向量查询
             SearchResponse<ESPostVector> resp = client.search(s -> s
                             .index(Const.ES_INDEX_FORUM_POSTS)
                             .knn(k -> k
@@ -145,33 +144,16 @@ public class ESServiceImpl implements ESService {
 
             return resp.hits().hits().stream()
                     .map(hit -> {
-                        if (hit.source() == null) {
-                            return null;
-                        }
-                        return hit.source().getId();
+                        log.info("查询到相似向量，id：" + hit.id());
+                        return hit.id();
                     })
                     .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
     }
-
-    // 搜索
-//    String searchText = "bike";
-//
-//    SearchResponse<Product> response = esClient.search(s -> s
-//                    .index("products")
-//                    .query(q -> q
-//                            .match(t -> t
-//                                    .field("name")
-//                                    .query(searchText)
-//                            )
-//                    ),
-//            Product.class
-//    );
-
 
     public boolean isExists(String id) throws IOException {
         return client.exists(e -> e.index(Const.ES_INDEX_FORUM_POSTS).id(id)).value();

@@ -109,14 +109,10 @@
             <version>1.0.2</version>
         </dependency>
         <!-- Elasticsearch Java API Client -->
-<!--        <dependency>-->
-<!--            <groupId>co.elastic.clients</groupId>-->
-<!--            <artifactId>elasticsearch-java</artifactId>-->
-<!--            <version>8.11.2</version>-->
-<!--        </dependency>-->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
+            <groupId>co.elastic.clients</groupId>
+            <artifactId>elasticsearch-java</artifactId>
+            <version>8.6.2</version>
         </dependency>
         <!-- Jackson 解析 -->
         <dependency>
