@@ -290,3 +290,4 @@ INSERT INTO `db_topic_type` (`id`, `name`, `desc`, `color`) VALUES (5, '踩坑�
 COMMIT;
 
 SET FOREIGN_KEY_CHECKS = 1;
+

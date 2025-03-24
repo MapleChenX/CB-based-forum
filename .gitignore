@@ -1,2 +1,6 @@
 .idea/
+.gitignore
+.vscode
+.xcodemap
 log/
+.iml
