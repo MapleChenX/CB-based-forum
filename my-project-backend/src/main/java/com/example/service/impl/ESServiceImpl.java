@@ -54,6 +54,19 @@ public class ESServiceImpl implements ESService {
         }
     }
 
+    @RabbitListener(queues = Const.POSTS_DEL_2_ES_MQ)
+    public void deletePost(String id) {
+        try {
+            client.delete(d -> d
+                    .index(Const.ES_INDEX_FORUM_POSTS)
+                    .id(id)
+            );
+            System.out.println("ES删除成功，id：" + id);
+        } catch (Exception e) {
+            System.out.println("ES删除失败，id：" + id);
+        }
+    }
+
     void recreateIndex() throws IOException {
         createIndexIfNotExists();  // 重新创建索引
     }

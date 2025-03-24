@@ -11,14 +11,12 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.common.Const;
+import com.example.entity.ESPostVector;
 import com.example.entity.dto.*;
 import com.example.entity.vo.request.AddCommentVO;
 import com.example.entity.vo.request.TopicCreateVO;
 import com.example.entity.vo.request.TopicUpdateVO;
-import com.example.entity.vo.response.CommentVO;
-import com.example.entity.vo.response.TopicDetailVO;
-import com.example.entity.vo.response.TopicPreviewVO;
-import com.example.entity.vo.response.TopicTopVO;
+import com.example.entity.vo.response.*;
 import com.example.mapper.*;
 import com.example.service.NotificationService;
 import com.example.service.TopicService;
@@ -31,6 +29,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.util.*;
@@ -114,7 +113,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         topic.setTime(new Date());
         if (this.save(topic)) {
             // 同步到es
-            mqUtil.sendMessage(Const.FORUM_POSTS_MQ, topic);
+            mqUtil.sendMessage(Const.FORUM_POSTS_2_ES_MQ, topic);
             cacheUtils.deleteCachePattern(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
             return null;
         } else {
@@ -123,28 +122,38 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     }
 
     // ES同步
-    @RabbitListener(queues = Const.FORUM_POSTS_MQ)
+    @RabbitListener(queues = Const.FORUM_POSTS_2_ES_MQ)
     public void saveToEs(Topic topic) {
         topic.setContent(PostContentConverter.convert(topic.getContent()));
 
-        // 构造 Elasticsearch 文档数据
-        Map<String, Object> document = new HashMap<>();
-        document.put("title", topic.getTitle());
-        document.put("content", topic.getContent());
+        ESPostVector esPostVector = new ESPostVector();
+        BeanUtils.copyProperties(topic, esPostVector);
 
-        // 创建索引请求
-        IndexRequest<Map> indexRequest = new IndexRequest.Builder<Map>()
-                .index(Const.ES_INDEX_FORUM_POSTS)
-                .id(String.valueOf(topic.getId()))
-                .document(document)
-                .build();
+        WebClient webClient = WebClient.create("http://127.0.0.1:8000");
 
-        // 执行索引请求
+        Map<String, String> request = new HashMap<>();
+        request.put("title", topic.getTitle());
+        request.put("content", topic.getContent());
+
+        text2vectorResp resp = webClient.post()
+                .uri("/text2vector")
+                .bodyValue(request)
+                .retrieve()
+                .bodyToMono(text2vectorResp.class)
+                .block();
+
+        if (resp != null) {
+            esPostVector.setEmbedding(resp.getVector());
+        }
+
         try {
-            IndexResponse response = elasticsearchClient.index(indexRequest);
-            log.info("ES 同步成功，响应：{}", response.id());
+            elasticsearchClient.index(i -> i
+                    .index(Const.ES_INDEX_FORUM_POSTS)
+                    .id(esPostVector.getId())
+                    .document(esPostVector)
+            );
         } catch (IOException e) {
-            log.error("ES 同步失败：{}", e.getMessage());
+            log.error("id: " + esPostVector.getId() + "插入ES失败：" + e.getMessage());
         }
     }
 
@@ -167,7 +176,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         topic.setId(vo.getId());
         topic.setTitle(vo.getTitle());
         topic.setContent(vo.getContent().toJSONString());
-        mqUtil.sendMessage(Const.FORUM_POSTS_MQ, topic);
+        mqUtil.sendMessage(Const.FORUM_POSTS_2_ES_MQ, topic);
         return null;
     }
 

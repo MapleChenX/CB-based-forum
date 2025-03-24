@@ -1,8 +1,5 @@
 package com.example.common;
 
-/**
- * 一些常量字符串整合
- */
 public final class Const {
     //JWT令牌
     public final static String JWT_BLACK_LIST = "jwt:blacklist:";
@@ -31,7 +28,8 @@ public final class Const {
     public final static String FORUM_TOPIC_PREVIEW_CACHE = "topic:preview:";
     public final static String TFIDF_BUCKET = "tfidf:bucket:";
     public final static String POST_CONTENT_BUCKET = "post:content:";
-    public final static String FORUM_POSTS_MQ = "forum:posts:MQ";
+    public final static String FORUM_POSTS_2_ES_MQ = "forum:posts:MQ";
+    public final static String POSTS_DEL_2_ES_MQ = "forum:posts:MQ";
     public final static String ES_INDEX_FORUM_POSTS = "forum_posts";
     public final static String INSERT_VECTOR_QUEUE = "insertVector";
 }

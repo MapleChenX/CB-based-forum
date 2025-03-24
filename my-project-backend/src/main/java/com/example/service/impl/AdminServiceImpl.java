@@ -2,11 +2,13 @@ package com.example.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.example.common.Const;
 import com.example.entity.dto.Account;
 import com.example.entity.dto.Topic;
 import com.example.service.AccountService;
 import com.example.service.AdminService;
 import com.example.service.TopicService;
+import com.example.utils.RabbitMQUtil;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +21,8 @@ public class AdminServiceImpl implements AdminService {
     @Resource
     TopicService topicService;
 
+    @Resource
+    private RabbitMQUtil rabbitMQUtil;
 
     @Override
     public List<Account> findAllUser() {
@@ -45,7 +49,12 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public void deleteTopic(int tid) {
         // 删除帖子
-        topicService.remove(Wrappers.<Topic>query().eq("id", tid));
+        topicService.update(
+                Wrappers.<Topic>lambdaUpdate()
+                        .set(Topic::getIsDel, 1)
+                        .eq(Topic::getId, tid));
+
+        rabbitMQUtil.sendMessage(Const.POSTS_DEL_2_ES_MQ, String.valueOf(tid));
     }
 
     @Override

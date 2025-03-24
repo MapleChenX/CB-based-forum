@@ -43,8 +43,4 @@ public class RabbitConfiguration {
                 .build();
     }
 
-    @Bean
-    public Queue forumQueue() {
-        return new Queue(Const.FORUM_POSTS_MQ, true, false, false);
-    }
 }
