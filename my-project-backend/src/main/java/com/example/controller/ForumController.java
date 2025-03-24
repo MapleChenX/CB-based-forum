@@ -10,6 +10,8 @@ import com.example.service.TopicService;
 import com.example.service.WeatherService;
 import com.example.common.Const;
 import com.example.utils.ControllerUtils;
+import com.example.utils.SensitiveWordFilter;
+import com.github.houbb.sensitive.word.core.SensitiveWordHelper;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -31,6 +33,9 @@ public class ForumController {
 
     @Resource
     ControllerUtils utils;
+
+    @Resource
+        private SensitiveWordFilter sensitiveWordFilter;
 
     @GetMapping("/weather")
     public RestBean<WeatherVO> weather(double longitude, double latitude){
@@ -57,7 +62,12 @@ public class ForumController {
     @GetMapping("/list-topic")
     public RestBean<List<TopicPreviewVO>> listTopic(@RequestParam @Min(0) int page,
                                                     @RequestParam @Min(0) int type) {
-        return RestBean.success(topicService.listTopicByPage(page + 1, type));
+        List<TopicPreviewVO> topicPreviewVOS = topicService.listTopicByPage(page + 1, type);
+        topicPreviewVOS.forEach(topic -> {
+            topic.setTitle(SensitiveWordHelper.replace(topic.getTitle()));
+            topic.setText(SensitiveWordHelper.replace(topic.getText()));
+        });
+        return RestBean.success(topicPreviewVOS);
     }
 
     @GetMapping("/top-topic")
@@ -74,7 +84,10 @@ public class ForumController {
     @GetMapping("/topic")
     public RestBean<TopicDetailVO> topic(@RequestParam @Min(0) int tid,
                                          @RequestAttribute(Const.ATTR_USER_ID) int id){
-        return RestBean.success(topicService.getTopic(tid, id));
+        TopicDetailVO topic = topicService.getTopic(tid, id);
+        topic.setContent(SensitiveWordHelper.replace(topic.getContent()));
+        topic.setTitle(SensitiveWordHelper.replace(topic.getTitle()));
+        return RestBean.success(topic);
     }
 
     /**
@@ -125,7 +138,9 @@ public class ForumController {
     @GetMapping("/comments")
     public RestBean<List<CommentVO>> comments(@RequestParam @Min(0) int tid,
                                               @RequestParam @Min(0) int page){
-        return RestBean.success(topicService.comments(tid, page + 1));
+        List<CommentVO> comments = topicService.comments(tid, page + 1);
+        comments.forEach(comment -> comment.setContent(SensitiveWordHelper.replace(comment.getContent())));
+        return RestBean.success(comments);
     }
 
     /**
