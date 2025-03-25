@@ -16,7 +16,7 @@ const text = computed(() => route.params.text);
 const topics = reactive({
     list: [],
     page: 1,
-    size: 10,
+    size: 30,
     end: false
 })
 
@@ -40,9 +40,9 @@ const resetList = () => {
 }
 
 watch(
-    () => text.value, // 监听computed的value
+    () => text.value,
     (newVal, oldVal) => {
-        if (newVal !== oldVal) { // 避免无变化时触发
+        if (newVal !== oldVal) {
             resetList()
         }
     }
@@ -53,8 +53,7 @@ watch(
     <div style="width: 900px;margin: 0 auto" v-infinite-scroll="search">
         <div v-if="topics.list.length">
             <div style="margin-top: 10px;display: flex;flex-direction: column;gap: 10px">
-                <light-card v-for="item in topics.list" class="topic-card"
-                >
+                <light-card v-for="item in topics.list" class="topic-card">
                     <div style="display: flex">
                         <div>
                             <el-avatar :size="30" :src="store.avatarUserUrl(item.avatar)"/>
@@ -71,7 +70,12 @@ watch(
                     </div>
                     <div style="margin-top: 5px">
 <!--                        <topic-tag :type="item.type"/>-->
-                        <span style="font-weight: bold;" @click="router.push('/index/topic-detail/'+item.id)">{{item.title}}</span>
+                        <span
+                            style="font-weight: bold;"
+                            @click="router.push({ path: '/index/topic-detail/' + item.id, query: { from: 'search' } })"
+                        >
+                          {{ item.title }}
+                        </span>
                     </div>
                     <div class="topic-content">{{item.text}}</div>
                     <div style="display: grid;grid-template-columns: repeat(3, 1fr);grid-gap: 10px">

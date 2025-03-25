@@ -22,7 +22,6 @@ const show = ref(false)
 const loading = ref(true)
 
 const searchInput = reactive({
-    type: '1',
     text: ''
 })
 const notification = ref([])
@@ -52,6 +51,12 @@ function confirmNotification(id, url) {
 function deleteAllNotification() {
     get(`/api/notification/delete-all`, loadNotification)
 }
+
+const toSearch = () => {
+    if (searchInput.text) {
+        router.push(`/index/search/${searchInput.text}`)
+    }
+}
 </script>
 
 <template>
@@ -61,20 +66,11 @@ function deleteAllNotification() {
                 <el-image style="border-radius: 50px" class="logo" src="/favicon.ico"/>
               <h4 style="color: #79b7f8;margin-left: 10px"> 听竹雨</h4>
                 <div style="flex: 1;padding: 0 20px;text-align: center">
-                    <el-input v-model="searchInput.text" style="width: 100%;max-width: 500px"
-                              placeholder="搜索论坛相关内容...">
-                        <template #prefix>
-                            <el-icon>
+                    <el-input v-model="searchInput.text" style="width: 100%;max-width: 500px" placeholder="搜索相关内容...">
+                        <template #append>
+                            <el-icon @click="toSearch" style="cursor: pointer">
                                 <Search/>
                             </el-icon>
-                        </template>
-                        <template #append>
-                            <el-select style="width: 120px" v-model="searchInput.type">
-                                <el-option value="1" label="帖子广场"/>
-                                <el-option value="2" label="校园活动"/>
-                                <el-option value="3" label="表白墙"/>
-                                <el-option value="4" label="教务通知"/>
-                            </el-select>
                         </template>
                     </el-input>
                 </div>

@@ -179,8 +179,7 @@ function downTop(tid){
                 <div v-if="topics.list.length">
                     <div style="margin-top: 10px;display: flex;flex-direction: column;gap: 10px"
                          v-infinite-scroll="updateList">
-                        <light-card v-for="item in topics.list" class="topic-card"
-                                    >
+                        <light-card v-for="item in topics.list" class="topic-card">
                             <div style="display: flex">
                                 <div>
                                     <el-avatar :size="30" :src="store.avatarUserUrl(item.avatar)"/>
@@ -197,7 +196,11 @@ function downTop(tid){
                             </div>
                             <div style="margin-top: 5px">
                                 <topic-tag :type="item.type"/>
-                                <span style="font-weight: bold;margin-left: 7px" @click="router.push('/index/topic-detail/'+item.id)">{{item.title}}</span>
+                                <span style="font-weight: bold;margin-left: 7px"
+                                      @click="router.push({ path: '/index/topic-detail/' + item.id, query: { from: 'index' } })"
+                                >
+                                    {{item.title}}
+                                </span>
                             </div>
                             <div class="topic-content">{{item.text}}</div>
                             <div style="display: grid;grid-template-columns: repeat(3, 1fr);grid-gap: 10px">
