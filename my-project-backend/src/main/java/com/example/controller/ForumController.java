@@ -164,7 +164,13 @@ public class ForumController {
     @GetMapping("/search/{keyword}")
     public RestBean<List<TopicPreviewVO>> search(@PathVariable String keyword,
                                                  @RequestParam(defaultValue = "1") Integer page,
-                                                 @RequestParam(defaultValue = "10") Integer size){
-        return RestBean.success(topicService.search(keyword, page, size));
+                                                 @RequestParam(defaultValue = "10") Integer size) {
+        List<TopicPreviewVO> res = topicService.search(keyword, page, size).stream()
+                .peek(e -> {
+                    e.setTitle(SensitiveWordHelper.replace(e.getTitle()));
+                    e.setText(SensitiveWordHelper.replace(e.getText()));
+                })
+                .toList();
+        return RestBean.success(res);
     }
 }
