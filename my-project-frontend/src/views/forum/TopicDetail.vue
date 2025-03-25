@@ -145,7 +145,7 @@ function deleteComment(id) {
             <div class="topic-main" style="position: sticky;top: 0;z-index: 10">
                 <card style="display: flex;width: 100%;">
                     <el-button :icon="ArrowLeft" type="info" size="small"
-                               plain round @click="router.push('/index')">返回列表</el-button>
+                               plain round @click="router.push('/index')">返回主页</el-button>
                     <div style="text-align: center;flex: 1">
                         <topic-tag :type="topic.data.type"/>
                         <span style="font-weight: bold;margin-left: 5px">{{topic.data.title}}</span>

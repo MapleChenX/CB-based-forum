@@ -1,13 +1,7 @@
 package com.example.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.SortOrder;
-import co.elastic.clients.elasticsearch.core.IndexRequest;
-import co.elastic.clients.elasticsearch.core.IndexResponse;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.search.HighlightField;
-import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -27,7 +21,7 @@ import com.example.utils.*;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.client.RequestOptions;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.annotation.Lazy;
@@ -457,11 +451,19 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             offset = 10; // 默认每页10条
         }
 
+        List<Integer> postIds = searchSimilarPostIds(keyword, page, offset);
+
+        List<Topic> topics = baseMapper.selectList(Wrappers.<Topic>query().in("id", postIds));
+        if (topics.isEmpty()) return null;
+
+        return topics.stream().map(this::resolveToPreview).toList();
+    }
+
+    @NotNull
+    private List<Integer> searchSimilarPostIds(String keyword, Integer finalPage, Integer finalOffset) {
+        SearchResponse<ESPostVector> response;
         try {
-            // 2. 构建搜索请求
-            Integer finalPage = page;
-            Integer finalOffset = offset;
-            SearchResponse<ESPostVector> response = elasticsearchClient.search(s -> s
+            response = elasticsearchClient.search(s -> s
                             .index(Const.ES_INDEX_FORUM_POSTS)
                             .query(q -> q
                                     .multiMatch(m -> m
@@ -474,22 +476,14 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
                             .size(finalOffset),
                     ESPostVector.class
             );
-
-            // 3. 处理搜索结果
-            List<Integer> postIds = response.hits().hits().stream()
-                    .map(hit -> Integer.parseInt(hit.id()))
-                    .toList();
-
-            // 获取分页数据
-            List<Topic> topics = baseMapper.selectList(Wrappers.<Topic>query().in("id", postIds));
-            if (topics.isEmpty()) return null;
-
-            // 转换为Preview对象并返回
-            return topics.stream().map(this::resolveToPreview).toList();
         } catch (IOException e) {
             log.error("Elasticsearch search error", e);
             throw new RuntimeException("Search failed", e);
         }
+
+        return response.hits().hits().stream()
+                .map(hit -> Integer.parseInt(hit.id()))
+                .toList();
     }
 
 

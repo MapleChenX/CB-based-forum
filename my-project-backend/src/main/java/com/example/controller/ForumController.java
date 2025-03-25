@@ -159,12 +159,12 @@ public class ForumController {
      * 帖子搜索
      * @param keyword 关键字
      * @param page 页码
-     * @param offset 偏移量
+     * @param size 偏移量
      */
-    @GetMapping("/search")
-    public RestBean<List<TopicPreviewVO>> search(@RequestParam(required = true) String keyword,
+    @GetMapping("/search/{keyword}")
+    public RestBean<List<TopicPreviewVO>> search(@PathVariable String keyword,
                                                  @RequestParam(defaultValue = "1") Integer page,
-                                                 @RequestParam(defaultValue = "10") Integer offset){
-        return RestBean.success(topicService.search(keyword, page, offset));
+                                                 @RequestParam(defaultValue = "10") Integer size){
+        return RestBean.success(topicService.search(keyword, page, size));
     }
 }

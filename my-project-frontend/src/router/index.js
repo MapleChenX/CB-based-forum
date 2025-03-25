@@ -55,6 +55,10 @@ const router = createRouter({
                     path: 'admin-setting',
                     name: 'admin-setting',
                     component: () => import('@/views/settings/Administration.vue')
+                },{
+                    path: 'search/:text',
+                    name: 'search',
+                    component: () => import('@/views/forum/SearchList.vue')
                 }
             ]
         }
