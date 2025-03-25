@@ -1,10 +1,13 @@
 package com.example.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.HighlightField;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -24,6 +27,7 @@ import com.example.utils.*;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.client.RequestOptions;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.annotation.Lazy;
@@ -440,42 +444,38 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     @Override
     public List<TopicPreviewVO> search(String keyword, Integer page, Integer offset) {
-        // 搜索结果
-        // 1-根据关键字查询es中的title和content获取ids
+        // 1. 参数校验
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
 
-        SearchRequest searchRequest = new SearchRequest.Builder()
-                .index(Const.ES_INDEX_FORUM_POSTS)
-                .query(q -> q
-                        .bool(b -> b
-                                .must(m -> m
-                                        .match(ma -> ma
-                                                .field("title")
-                                                .query(keyword)
-                                        )
-                                )
-                                .must(m -> m
-                                        .match(ma -> ma
-                                                .field("content")
-                                                .query(keyword)
-                                        )
-                                )
-                                .filter(f -> f
-                                        .term(t -> t
-                                                .field("is_deleted")
-                                                .value(false) // 确保只返回未删除的文档
-                                        )
-                                )
-                        )
-                )
-                .from((page - 1) * offset)  // Pagination
-                .size(offset)
-                .build();
+        if (page == null || page < 1) {
+            page = 1;
+        }
 
+        if (offset == null || offset < 1) {
+            offset = 10; // 默认每页10条
+        }
 
-        // 2-根据ids查询mysql
         try {
-            SearchResponse<Map> response = elasticsearchClient.search(searchRequest, Map.class);
+            // 2. 构建搜索请求
+            Integer finalPage = page;
+            Integer finalOffset = offset;
+            SearchResponse<ESPostVector> response = elasticsearchClient.search(s -> s
+                            .index(Const.ES_INDEX_FORUM_POSTS)
+                            .query(q -> q
+                                    .multiMatch(m -> m
+                                            .query(keyword)
+                                            .fields("title^2", "content")
+                                    )
+                            )
+                            .source(sc -> sc.filter(f -> f.excludes("*"))) // 排除所有字段
+                            .from((finalPage - 1) * finalOffset)
+                            .size(finalOffset),
+                    ESPostVector.class
+            );
 
+            // 3. 处理搜索结果
             List<Integer> postIds = response.hits().hits().stream()
                     .map(hit -> Integer.parseInt(hit.id()))
                     .toList();
@@ -483,13 +483,15 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
             // 获取分页数据
             List<Topic> topics = baseMapper.selectList(Wrappers.<Topic>query().in("id", postIds));
             if (topics.isEmpty()) return null;
-            // 3-转换为Preview对象并返回
+
+            // 转换为Preview对象并返回
             return topics.stream().map(this::resolveToPreview).toList();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+        } catch (IOException e) {
+            log.error("Elasticsearch search error", e);
+            throw new RuntimeException("Search failed", e);
         }
     }
+
 
     // 数据库数据
     // {"ops":[{"insert":{"image":"http://localhost:8080/images/cache/20231103/f1915a87311d40beb9926c16c41f8230"}},{"insert":"\n"},{"insert":{"image":"http://localhost:8080/images/cache/20231103/9912f6aed02c4ca6950c4d17f5ff7e83"}},{"insert":"\n\n"}]}
