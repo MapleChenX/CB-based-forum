@@ -7,7 +7,6 @@ import lombok.Data;
 public class UpdateUserReq {
     Integer id;
     String username;
-    String password;
     String email;
     Integer gender;
     String phone;

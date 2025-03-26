@@ -24,6 +24,7 @@ import com.example.utils.RabbitMQUtil;
 import com.example.utils.SnowflakeIdGenerator;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +45,9 @@ public class AdminServiceImpl implements AdminService {
 
     @Resource
     private RabbitMQUtil rabbitMQUtil;
+
+    @Resource
+    PasswordEncoder passwordEncoder;
 
     @Override
     public AllUserResp findAllUser(Integer page, Integer size, AllUserSearchReq req) {
@@ -93,11 +97,13 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public void addUser(AddUserReq req) {
         SnowflakeIdGenerator snowflakeIdGenerator = new SnowflakeIdGenerator();
-        int id = (int) snowflakeIdGenerator.nextId();
+        String idStr = String.valueOf(snowflakeIdGenerator.nextId());
+        String shortId = idStr.substring(idStr.length() - 9); // 取最后 9 位
+        int id = Integer.parseInt(shortId);
         Account account = new Account();
         account.setId(id);
         account.setUsername(req.getUsername());
-        account.setPassword(req.getPassword());
+        account.setPassword(passwordEncoder.encode(req.getPassword()));
         account.setEmail(req.getEmail());
         account.setRegisterTime(new Date()); // 注册时间
         AccountDetails accountDetails = new AccountDetails();

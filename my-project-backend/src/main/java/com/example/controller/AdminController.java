@@ -9,6 +9,7 @@ import com.example.entity.vo.response.AllPostsResp;
 import com.example.entity.vo.response.AllUserResp;
 import com.example.service.AdminService;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,7 +27,7 @@ public class AdminController {
     }
 
     @RequestMapping("/add-user")
-    public RestBean<AllUserResp> addUser(@RequestBody AddUserReq req){
+    public RestBean<AllUserResp> addUser(@RequestBody @Valid AddUserReq req){
         service.addUser(req);
         return RestBean.success();
     }
