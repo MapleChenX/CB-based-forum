@@ -3,6 +3,8 @@ package com.example.controller;
 import com.example.entity.RestBean;
 import com.example.entity.dto.Account;
 import com.example.entity.dto.Topic;
+import com.example.entity.vo.response.AllPostsResp;
+import com.example.entity.vo.response.AllUserResp;
 import com.example.service.AdminService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
@@ -16,15 +18,15 @@ public class AdminController {
     AdminService service;
 
     @GetMapping("/all-user")
-    public RestBean<List<Account>> showAllUser(){
-        List<Account> allAccount = service.findAllUser();
-        return RestBean.success(allAccount);
+    public RestBean<AllUserResp> showAllUser(@RequestParam(defaultValue = "1") Integer page,
+                                               @RequestParam(defaultValue = "10") Integer size){
+        return RestBean.success(service.findAllUser(page, size));
     }
 
     @GetMapping("/all-topic")
-    public RestBean<List<Topic>> showAllTopic(){
-        List<Topic> allTopic = service.findAllTopic();
-        return RestBean.success(allTopic);
+    public RestBean<AllPostsResp> showAllTopic(@RequestParam(defaultValue = "1") Integer page,
+                                                     @RequestParam(defaultValue = "10") Integer size){
+        return RestBean.success(service.findAllTopic(page, size));
     }
 
     @GetMapping("/delete-user")
@@ -38,16 +40,19 @@ public class AdminController {
         service.deleteTopic(tid);
         return RestBean.success();
     }
+
     @GetMapping("/rank-up")
     public RestBean<Void> rankUp(@RequestParam int uid){
         service.rankUp(uid);
         return RestBean.success();
     }
+
     @GetMapping("/set-top")
     public RestBean<Void> setTop(@RequestParam int tid){
         service.setTop(tid);
         return RestBean.success();
     }
+
     @GetMapping("/down-top")
     public RestBean<Void> downTop(@RequestParam int tid){
         service.downTop(tid);
