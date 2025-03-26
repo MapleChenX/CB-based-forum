@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.example.entity.BaseData;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
@@ -24,4 +25,5 @@ public class Account implements BaseData {
     String role;
     String avatar;
     Date registerTime;
+    Integer isDel = 0;
 }

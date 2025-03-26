@@ -3,6 +3,8 @@ package com.example.controller;
 import com.example.entity.RestBean;
 import com.example.entity.dto.Account;
 import com.example.entity.dto.Topic;
+import com.example.entity.vo.request.AllTopicSearchReq;
+import com.example.entity.vo.request.AllUserSearchReq;
 import com.example.entity.vo.response.AllPostsResp;
 import com.example.entity.vo.response.AllUserResp;
 import com.example.service.AdminService;
@@ -17,20 +19,22 @@ public class AdminController {
     @Resource
     AdminService service;
 
-    @GetMapping("/all-user")
-    public RestBean<AllUserResp> showAllUser(@RequestParam(defaultValue = "1") Integer page,
-                                               @RequestParam(defaultValue = "10") Integer size){
-        return RestBean.success(service.findAllUser(page, size));
+    @RequestMapping("/all-user")
+    public RestBean<AllUserResp> showAllUser(@RequestParam Integer page,
+                                             @RequestParam Integer size,
+                                             @RequestBody AllUserSearchReq req){
+        return RestBean.success(service.findAllUser(page, size, req));
     }
 
-    @GetMapping("/all-topic")
-    public RestBean<AllPostsResp> showAllTopic(@RequestParam(defaultValue = "1") Integer page,
-                                                     @RequestParam(defaultValue = "10") Integer size){
-        return RestBean.success(service.findAllTopic(page, size));
+    @RequestMapping("/all-topic")
+    public RestBean<AllPostsResp> showAllTopic(@RequestParam Integer page,
+                                               @RequestParam Integer size,
+                                               @RequestBody AllTopicSearchReq req){
+        return RestBean.success(service.findAllTopic(page, size, req));
     }
 
     @GetMapping("/delete-user")
-    public RestBean<Void> deleteUser(@RequestParam int uid){
+    public RestBean<Void> deleteUser(@RequestParam Integer uid){
         service.deleteUser(uid);
         return RestBean.success();
     }

@@ -1,5 +1,6 @@
 package com.example.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -7,6 +8,8 @@ import com.example.common.Const;
 import com.example.entity.dto.Account;
 import com.example.entity.dto.AccountDetails;
 import com.example.entity.dto.Topic;
+import com.example.entity.vo.request.AllTopicSearchReq;
+import com.example.entity.vo.request.AllUserSearchReq;
 import com.example.entity.vo.response.AccountResp;
 import com.example.entity.vo.response.AllPostsResp;
 import com.example.entity.vo.response.AllUserResp;
@@ -37,9 +40,30 @@ public class AdminServiceImpl implements AdminService {
     private RabbitMQUtil rabbitMQUtil;
 
     @Override
-    public AllUserResp findAllUser(Integer page, Integer size) {
+    public AllUserResp findAllUser(Integer page, Integer size, AllUserSearchReq req) {
         Page<Account> pageRequest = new Page<>(page, size);
-        Page<Account> admin = accountService.page(pageRequest, Wrappers.<Account>lambdaQuery().ne(Account::getRole, "admin"));
+
+        LambdaQueryWrapper<Account> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.ne(Account::getRole, "admin");
+
+        // 根据请求参数动态添加查询条件
+        if (req.getId() != null) {
+            queryWrapper.eq(Account::getId, req.getId());
+        }
+        if (req.getUsername() != null && !req.getUsername().isEmpty()) {
+            queryWrapper.like(Account::getUsername, req.getUsername());
+        }
+        if (req.getEmail() != null && !req.getEmail().isEmpty()) {
+            queryWrapper.eq(Account::getEmail, req.getEmail());
+        }
+        if (req.getTimeStart() != null) {
+            queryWrapper.ge(Account::getRegisterTime, req.getTimeStart());
+        }
+        if (req.getTimeEnd() != null) {
+            queryWrapper.le(Account::getRegisterTime, req.getTimeEnd());
+        }
+
+        Page<Account> admin = accountService.page(pageRequest, queryWrapper);
 
         List<AccountResp> list = admin.getRecords().stream()
                 .map(e -> {
@@ -62,25 +86,43 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public void deleteUser(int uid) {
-        // 获取用户
         Account user = accountService.getOne(Wrappers.<Account>query().eq("id", uid));
-        // 检查用户角色是否为 "admin"
         if (user != null && !user.getRole().equals("admin")) {
-            // 删除用户
-            accountService.remove(Wrappers.<Account>query().eq("id", uid));
-            // 删除用户下的所有帖子
-            topicService.remove(Wrappers.<Topic>query().eq("uid", uid));
+            accountService.update(Wrappers.<Account>lambdaUpdate()
+                    .set(Account::getIsDel, 1)
+                    .eq(Account::getId, uid));
         }
     }
 
     @Override
-    public AllPostsResp findAllTopic(Integer page, Integer size) {
+    public AllPostsResp findAllTopic(Integer page, Integer size, AllTopicSearchReq req) {
         Page<Topic> pageRequest = new Page<>(page, size);
-        Page<Topic> pageData = topicService.page(pageRequest, Wrappers.<Topic>lambdaQuery().orderByDesc(Topic::getTime));
+
+        LambdaQueryWrapper<Topic> queryWrapper = Wrappers.lambdaQuery();
+
+        // 动态条件查询
+        if (req.getId() != null) {
+            queryWrapper.eq(Topic::getId, req.getId());
+        }
+        if (req.getType() != null) {
+            queryWrapper.eq(Topic::getType, req.getType());
+        }
+        if (req.getTitle() != null && !req.getTitle().isEmpty()) {
+            queryWrapper.like(Topic::getTitle, req.getTitle());
+        }
+        if (req.getUid() != null) {
+            queryWrapper.eq(Topic::getUid, req.getUid());
+        }
+        if (req.getTimeStart() != null) {
+            queryWrapper.ge(Topic::getTime, req.getTimeStart());
+        }
+        if (req.getTimeEnd() != null) {
+            queryWrapper.le(Topic::getTime, req.getTimeEnd());
+        }
+
+        Page<Topic> pageData = topicService.page(pageRequest, queryWrapper);
         List<TopicPreviewVO> list = pageData.getRecords().stream()
-                .map(e -> {
-                    return topicService.resolveToPreview(e);
-                })
+                .map(e -> topicService.resolveToPreview(e))
                 .toList();
         AllPostsResp allPostsResp = new AllPostsResp();
         allPostsResp.setPosts(list);
