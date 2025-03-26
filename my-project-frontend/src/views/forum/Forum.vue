@@ -16,7 +16,7 @@ get('/api/forum/types', data => {
     <div>
         <router-view v-slot="{ Component }">
             <transition name="el-fade-in-linear" mode="out-in">
-                <keep-alive include="TopicList">
+                <keep-alive>
                     <component :is="Component"/>
                 </keep-alive>
             </transition>

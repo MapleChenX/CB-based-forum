@@ -4,16 +4,16 @@ import router from "@/router";
 import {useStore} from "@/store";
 import {reactive, ref} from "vue";
 import {
-  Avatar,
-  Back,
-  Bell,
-  ChatDotSquare, Check, Collection, DataLine,
-  Document, Files,
-  Location, Lock, Message, Monitor,
-  Notification, Operation,
-  Position,
-  School, Search,
-  Umbrella, User
+    Avatar,
+    Back,
+    Bell,
+    ChatDotSquare, Check, Collection, Comment, DataLine,
+    Document, Files,
+    Location, Lock, Message, Monitor,
+    Notification, Operation,
+    Position,
+    School, Search,
+    Umbrella, User
 } from "@element-plus/icons-vue";
 import LightCard from "@/components/LightCard.vue";
 
@@ -30,7 +30,6 @@ get('/api/user/info', (data) => {
     store.user = data
     // 如果store.user.role为“admin”，则show.value为true
     show.value = store.user.role === 'admin'
-    console.log('值为'+show.value)
     loading.value = false
 })
 const loadNotification =
@@ -255,14 +254,23 @@ const toSearch = () => {
                                     </template>
                                 </el-menu-item>
 
-                              <el-menu-item index="/index/admin-setting"  v-if="show" >
+                              <el-menu-item index="/index/user-admin-setting"  v-if="show" >
                                 <template #title>
                                   <el-icon>
                                     <Avatar />
                                   </el-icon>
-                                  管理员专用
+                                  用户管理
                                 </template>
                               </el-menu-item>
+
+                                <el-menu-item index="/index/post-admin-setting"  v-if="show" >
+                                    <template #title>
+                                        <el-icon>
+                                            <Comment />
+                                        </el-icon>
+                                        帖子管理
+                                    </template>
+                                </el-menu-item>
 
                             </el-sub-menu>
                         </el-menu>

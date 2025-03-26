@@ -51,14 +51,18 @@ const router = createRouter({
                     path: 'privacy-setting',
                     name: 'privacy-setting',
                     component: () => import('@/views/settings/PrivacySetting.vue')
-                }, {
-                    path: 'admin-setting',
-                    name: 'admin-setting',
-                    component: () => import('@/views/settings/Administration.vue')
                 },{
                     path: 'search/:text',
                     name: 'search',
                     component: () => import('@/views/forum/SearchList.vue')
+                },{
+                    path: 'user-admin-setting',
+                    name: 'user-admin-setting',
+                    component: () => import('@/views/settings/UserAdministration.vue')
+                },{
+                    path: 'post-admin-setting',
+                    name: 'post-admin-setting',
+                    component: () => import('@/views/settings/PostAdministration.vue')
                 }
             ]
         }
