@@ -17,13 +17,19 @@ const users = reactive({
     pages: 0,
 })
 
-const searchRequest = reactive({
-    name: '',
-    email: '',
-    role: '',
+const searchParams = reactive({
+    name: '',           // 用户名
+    email: '',          // 邮箱
+    role: '',           // 角色
+    gender: '',         // 性别
+    phone: '',          // 电话
+    qq: '',             // QQ
+    wx: '',             // 微信
+    registerTime: [],   // 注册时间范围（用于日期选择器）
+    desc: '',           // 想说的话
 })
 
-const fetchUsers = () => get('/api/admin/all-user', data => {
+const fetchUsers = () => get(`/api/admin/all-user?page=${users.curPage}&size=${users.size}`, data => {
     Object.assign(users, data)
 })
 
@@ -61,12 +67,100 @@ function formatRole(role) {
     }
     return '用户'; // 如果不是管理员，返回"用户"
 }
+
+const handlePageChange = (newPage) => {
+    users.curPage = newPage;
+    fetchUsers(); // 重新获取用户数据
+};
+
 </script>
 
 <template>
-    <el-card style="margin: 0 20px">
+<!--    <el-card style="margin: 0 20px">-->
+<!--        <div class="query-section" style="margin-bottom: 20px;">-->
+<!--            <el-row :gutter="20">-->
+<!--                <el-col :span="6">-->
+<!--                    <el-input-->
+<!--                        v-model="searchParams.name"-->
+<!--                        placeholder="用户名"-->
+<!--                        clearable-->
+<!--                    ></el-input>-->
+<!--                </el-col>-->
+<!--                <el-col :span="6">-->
+<!--                    <el-input-->
+<!--                        v-model="searchParams.email"-->
+<!--                        placeholder="邮箱"-->
+<!--                        clearable-->
+<!--                    ></el-input>-->
+<!--                </el-col>-->
+<!--                <el-col :span="6">-->
+<!--                    <el-select-->
+<!--                        v-model="searchParams.role"-->
+<!--                        placeholder="角色"-->
+<!--                        clearable-->
+<!--                    >-->
+<!--                        <el-option label="用户" value="user"></el-option>-->
+<!--                        <el-option label="管理员" value="admin"></el-option>-->
+<!--                    </el-select>-->
+<!--                </el-col>-->
+<!--                <el-col :span="6">-->
+<!--                    <el-select-->
+<!--                        v-model="searchParams.gender"-->
+<!--                        placeholder="性别"-->
+<!--                        clearable-->
+<!--                    >-->
+<!--                        <el-option label="男" value="1"></el-option>-->
+<!--                        <el-option label="女" value="0"></el-option>-->
+<!--                    </el-select>-->
+<!--                </el-col>-->
+<!--            </el-row>-->
 
-    </el-card>
+<!--            <el-row :gutter="20">-->
+<!--                <el-col :span="6">-->
+<!--                    <el-input-->
+<!--                        v-model="searchParams.phone"-->
+<!--                        placeholder="电话"-->
+<!--                        clearable-->
+<!--                    ></el-input>-->
+<!--                </el-col>-->
+<!--                <el-col :span="6">-->
+<!--                    <el-input-->
+<!--                        v-model="searchParams.qq"-->
+<!--                        placeholder="QQ"-->
+<!--                        clearable-->
+<!--                    ></el-input>-->
+<!--                </el-col>-->
+<!--                <el-col :span="6">-->
+<!--                    <el-input-->
+<!--                        v-model="searchParams.wx"-->
+<!--                        placeholder="微信"-->
+<!--                        clearable-->
+<!--                    ></el-input>-->
+<!--                </el-col>-->
+<!--                <el-col :span="6">-->
+<!--                    <el-input-->
+<!--                        v-model="searchParams.desc"-->
+<!--                        placeholder="想说的话"-->
+<!--                        clearable-->
+<!--                    ></el-input>-->
+<!--                </el-col>-->
+<!--            </el-row>-->
+
+<!--            <el-row :gutter="20">-->
+<!--                <el-col :span="6">-->
+<!--                    <el-date-picker-->
+<!--                        v-model="searchParams.registerTime"-->
+<!--                        type="daterange"-->
+<!--                        range-separator="至"-->
+<!--                        start-placeholder="开始日期"-->
+<!--                        end-placeholder="结束日期"-->
+<!--                        clearable-->
+<!--                    ></el-date-picker>-->
+<!--                </el-col>-->
+<!--            </el-row>-->
+<!--        </div>-->
+
+<!--    </el-card>-->
 
     <el-card style="margin: 20px">
         <div slot="header" class="clearfix">
@@ -85,7 +179,7 @@ function formatRole(role) {
             <el-table-column prop="email" label="邮箱" width="180px"/>
             <el-table-column label="头像" width="100">
                 <template #default="{ row }">
-                    <el-avatar :src="avatar(row.avatar)" size="large"></el-avatar>
+                    <el-avatar :src="avatar(row.avatar)" size="middle"></el-avatar>
                 </template>
             </el-table-column>
             <el-table-column prop="role" label="角色" width="80">
@@ -115,14 +209,16 @@ function formatRole(role) {
             </el-table-column>
         </el-table>
 
-        <el-pagination
-            :current-page="users.curPage"
-            :page-size="users.size"
-            :total="users.total"
-            @current-change="handlePageChange"
-            layout="prev, pager, next"
-        >
-        </el-pagination>
+        <div style="display: flex; justify-content: center; margin-top: 20px;">
+            <el-pagination
+                :current-page="users.curPage"
+                :page-size="users.size"
+                :total="users.total"
+                @current-change="handlePageChange"
+                layout="prev, pager, next"
+            >
+            </el-pagination>
+        </div>
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="isEditing ? '编辑用户' : '添加用户'">
