@@ -1,16 +1,15 @@
 package com.example.controller;
 
 import com.example.entity.RestBean;
-import com.example.entity.dto.Account;
-import com.example.entity.dto.Topic;
 import com.example.entity.vo.request.AllTopicSearchReq;
 import com.example.entity.vo.request.AllUserSearchReq;
+import com.example.entity.vo.request.AddUserReq;
+import com.example.entity.vo.request.UpdateUserReq;
 import com.example.entity.vo.response.AllPostsResp;
 import com.example.entity.vo.response.AllUserResp;
 import com.example.service.AdminService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -26,11 +25,28 @@ public class AdminController {
         return RestBean.success(service.findAllUser(page, size, req));
     }
 
+    @RequestMapping("/add-user")
+    public RestBean<AllUserResp> addUser(@RequestBody AddUserReq req){
+        service.addUser(req);
+        return RestBean.success();
+    }
+
+    @RequestMapping("/update-user")
+    public RestBean<AllUserResp> updateUser(@RequestBody UpdateUserReq req){
+        service.updateUser(req);
+        return RestBean.success();
+    }
+
     @RequestMapping("/all-topic")
     public RestBean<AllPostsResp> showAllTopic(@RequestParam Integer page,
                                                @RequestParam Integer size,
                                                @RequestBody AllTopicSearchReq req){
         return RestBean.success(service.findAllTopic(page, size, req));
+    }
+
+    @RequestMapping("/update-topic")
+    public RestBean<AllUserResp> updateTopic(@RequestBody AddUserReq req){
+        return RestBean.success();
     }
 
     @GetMapping("/delete-user")

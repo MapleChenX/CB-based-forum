@@ -8,8 +8,10 @@ import com.example.common.Const;
 import com.example.entity.dto.Account;
 import com.example.entity.dto.AccountDetails;
 import com.example.entity.dto.Topic;
+import com.example.entity.vo.request.AddUserReq;
 import com.example.entity.vo.request.AllTopicSearchReq;
 import com.example.entity.vo.request.AllUserSearchReq;
+import com.example.entity.vo.request.UpdateUserReq;
 import com.example.entity.vo.response.AccountResp;
 import com.example.entity.vo.response.AllPostsResp;
 import com.example.entity.vo.response.AllUserResp;
@@ -19,11 +21,15 @@ import com.example.service.AccountService;
 import com.example.service.AdminService;
 import com.example.service.TopicService;
 import com.example.utils.RabbitMQUtil;
+import com.example.utils.SnowflakeIdGenerator;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class AdminServiceImpl implements AdminService {
@@ -46,7 +52,6 @@ public class AdminServiceImpl implements AdminService {
         LambdaQueryWrapper<Account> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.ne(Account::getRole, "admin");
 
-        // 根据请求参数动态添加查询条件
         if (req.getId() != null) {
             queryWrapper.eq(Account::getId, req.getId());
         }
@@ -82,6 +87,34 @@ public class AdminServiceImpl implements AdminService {
         allUserResp.setSize(admin.getSize());
         allUserResp.setPages(admin.getPages());
         return allUserResp;
+    }
+
+    @Override
+    @Transactional
+    public void addUser(AddUserReq req) {
+        SnowflakeIdGenerator snowflakeIdGenerator = new SnowflakeIdGenerator();
+        int id = (int) snowflakeIdGenerator.nextId();
+        Account account = new Account();
+        account.setId(id);
+        account.setUsername(req.getUsername());
+        account.setPassword(req.getPassword());
+        account.setEmail(req.getEmail());
+        account.setRegisterTime(new Date()); // 注册时间
+        AccountDetails accountDetails = new AccountDetails();
+        accountDetails.setId(id);
+        accountService.save(account);
+        accountDetailsService.save(accountDetails);
+    }
+
+    @Override
+    @Transactional
+    public void updateUser(UpdateUserReq req) {
+        Account account = new Account();
+        AccountDetails accountDetails = new AccountDetails();
+        BeanUtils.copyProperties(req, account);
+        BeanUtils.copyProperties(req, accountDetails);
+        accountService.updateById(account);
+        accountDetailsService.updateById(accountDetails);
     }
 
     @Override

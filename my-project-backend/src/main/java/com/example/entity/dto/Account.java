@@ -16,13 +16,14 @@ import java.util.Date;
 @Data
 @TableName("db_account")
 @AllArgsConstructor
+@NoArgsConstructor
 public class Account implements BaseData {
     @TableId(type = IdType.AUTO)
     Integer id;
     String username;
     String password;
     String email;
-    String role;
+    String role = "user";
     String avatar;
     Date registerTime;
     Integer isDel = 0;
