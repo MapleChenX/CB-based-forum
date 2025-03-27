@@ -198,6 +198,8 @@ const submitAdd = () => {
         addDialogVisible.value = false
     })
 }
+
+const loading = computed(() => users.users.length === 0);
 </script>
 
 <template>

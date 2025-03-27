@@ -1,15 +1,21 @@
 package com.example.controller;
 
+import com.example.common.Const;
 import com.example.entity.RestBean;
+import com.example.entity.dto.Topic;
 import com.example.entity.vo.request.AllTopicSearchReq;
 import com.example.entity.vo.request.AllUserSearchReq;
 import com.example.entity.vo.request.AddUserReq;
 import com.example.entity.vo.request.UpdateUserReq;
 import com.example.entity.vo.response.AllPostsResp;
 import com.example.entity.vo.response.AllUserResp;
+import com.example.entity.vo.response.TopicDetailVO;
 import com.example.service.AdminService;
+import com.example.service.TopicService;
+import com.github.houbb.sensitive.word.core.SensitiveWordHelper;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,6 +24,9 @@ import org.springframework.web.bind.annotation.*;
 public class AdminController {
     @Resource
     AdminService service;
+
+    @Resource
+    TopicService topicService;
 
     @RequestMapping("/all-user")
     public RestBean<AllUserResp> showAllUser(@RequestParam Integer page,
@@ -38,6 +47,12 @@ public class AdminController {
         return RestBean.success();
     }
 
+    @GetMapping("/delete-user")
+    public RestBean<Void> deleteUser(@RequestParam Integer uid){
+        service.deleteUser(uid);
+        return RestBean.success();
+    }
+
     @RequestMapping("/all-topic")
     public RestBean<AllPostsResp> showAllTopic(@RequestParam Integer page,
                                                @RequestParam Integer size,
@@ -45,15 +60,10 @@ public class AdminController {
         return RestBean.success(service.findAllTopic(page, size, req));
     }
 
-    @RequestMapping("/update-topic")
-    public RestBean<AllUserResp> updateTopic(@RequestBody AddUserReq req){
-        return RestBean.success();
-    }
-
-    @GetMapping("/delete-user")
-    public RestBean<Void> deleteUser(@RequestParam Integer uid){
-        service.deleteUser(uid);
-        return RestBean.success();
+    @GetMapping("/topic")
+    public RestBean<Topic> topic(@RequestParam @Min(0) int tid){
+        Topic topic = topicService.getTopic(tid);
+        return RestBean.success(topic);
     }
 
     @GetMapping("/delete-topic")

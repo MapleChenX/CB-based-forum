@@ -330,6 +330,12 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         return vo;
     }
 
+    @Override
+    public Topic getTopic(int tid) {
+        if (tid <= 0) return null;
+        return getById(tid);
+    }
+
     /**
      * 由于论坛交互数据(如点赞、收藏等)更新可能会非常频繁
      * 为了减少数据库的压力，我们将交互数据先存储到 Redis 中
