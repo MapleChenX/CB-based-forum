@@ -250,7 +250,7 @@ function convertToHtml(content) {
 
 <style scoped>
 .topic-content {
-    height: calc(100% - 50px);
+    height: calc(100% - 20px);
     width: 100%;
     font-size: 13px;
     color: grey;
