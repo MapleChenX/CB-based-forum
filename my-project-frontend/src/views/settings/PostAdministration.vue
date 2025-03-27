@@ -248,7 +248,7 @@ function convertToHtml(content) {
         direction="ltr"
         size="40%"
     >
-        <div class="topic-content" v-html="convertToHtml(topic.content)" />
+        <div class="topic-content" v-if="topic && topic.content" v-html="convertToHtml(topic.content)" />
     </el-drawer>
 
 </template>
