@@ -101,7 +101,7 @@ const resetForm = () => {
 
 const loading = computed(() => posts.posts.length === 0);
 
-const drawerVisible = ref(true);  // 控制抽屉的显示状态
+const drawerVisible = ref(false);  // 控制抽屉的显示状态
 
 const topic = reactive({
     id: "",
@@ -110,15 +110,13 @@ const topic = reactive({
 })
 
 const showDialog = (id) => {
-    get(`/api/admin/topic?tid=${id}`, data => {
-        Object.assign(topic, data)
-    })
+    getSingleTopic(id)
     drawerVisible.value = true;
 };
 
 const getSingleTopic = (id) => {
     get(`/api/admin/topic?tid=${id}`, data => {
-        Object.assign(postData, data)
+        Object.assign(topic, data)
     })
 }
 
