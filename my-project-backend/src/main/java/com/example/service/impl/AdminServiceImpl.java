@@ -138,6 +138,7 @@ public class AdminServiceImpl implements AdminService {
         Page<Topic> pageRequest = new Page<>(page, size);
 
         LambdaQueryWrapper<Topic> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.eq(Topic::getIsDel, 0);
 
         // 动态条件查询
         if (req.getId() != null) {

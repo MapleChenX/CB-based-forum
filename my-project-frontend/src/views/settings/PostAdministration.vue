@@ -121,9 +121,14 @@ const getSingleTopic = (id) => {
 }
 
 function convertToHtml(content) {
-    const ops = JSON.parse(content).ops
-    const converter = new QuillDeltaToHtmlConverter(ops, { inlineStyles: true });
-    return converter.convert();
+    try {
+        const ops = JSON.parse(content).ops;
+        const converter = new QuillDeltaToHtmlConverter(ops, { inlineStyles: true });
+        return converter.convert();
+    } catch (error) {
+        console.error('Error converting to HTML:', error);
+        return '<p>加载失败，请稍后再试。</p>';  // 显示加载失败的信息
+    }
 }
 </script>
 
