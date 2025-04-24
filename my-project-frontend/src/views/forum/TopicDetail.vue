@@ -260,7 +260,7 @@ const return2origin = () => {
             <topic-editor :show="edit" @close="edit = false" v-if="topic.data && store.forum.types"
                           :default-type="topic.data.type" :default-text="topic.data.content"
                           :default-title="topic.data.title" submit-button="更新帖子内容" :submit="updateTopic"/>
-            <topic-comment-editor :show="comment.show" @close="comment.show = false" :tid="tid.value"
+            <topic-comment-editor :show="comment.show" @close="comment.show = false" :tid="tid"
                                   :quote="comment.quote" @comment="onCommentAdd"/>
             <div class="add-comment" @click="comment.show = true;comment.quote = null">
                 <el-icon><Plus/></el-icon>

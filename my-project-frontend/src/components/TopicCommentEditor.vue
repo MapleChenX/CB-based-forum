@@ -18,10 +18,10 @@ const emit = defineEmits(['close', 'comment'])
 const init = () => content.value = new Delta()
 
 function submitComment() {
-    // if (deltaToText(content.value).length > 50000) {
-    //     ElMessage.warning('评论字数已经超出最大限制，请缩减评论内容！')
-    //     return
-    // }
+    if (deltaToText(content.value).length > 50000) {
+        ElMessage.warning('评论字数已经超出最大限制，请缩减评论内容！')
+        return
+    }
     post('/api/forum/add-comment', {
         tid: props.tid,
         quote: props.quote ? props.quote.id : -1,
