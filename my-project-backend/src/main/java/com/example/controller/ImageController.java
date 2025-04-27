@@ -3,6 +3,8 @@ package com.example.controller;
 import com.example.entity.RestBean;
 import com.example.service.ImageService;
 import com.example.common.Const;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -14,12 +16,14 @@ import java.io.IOException;
 @Slf4j
 @RestController
 @RequestMapping("/api/image") //图片上传controller
+@Tag(name="图片端")
 public class ImageController {
 
     @Resource
     ImageService service;
 
     @PostMapping("/cache")
+    @Operation(summary = "上传图片")
     public RestBean<String> uploadImage(@RequestParam("file") MultipartFile file,
                                         @RequestAttribute(Const.ATTR_USER_ID) int id,
                                         HttpServletResponse response) throws IOException {
@@ -37,6 +41,7 @@ public class ImageController {
     }
 
     @PostMapping("/avatar")
+    @Operation(summary = "获取头像")
     public RestBean<String> uploadAvatar(@RequestParam("file") MultipartFile file,
                                          @RequestAttribute(Const.ATTR_USER_ID) int id) throws IOException {
         if(file.getSize() > 1024 * 100)

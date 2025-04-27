@@ -3,6 +3,8 @@ package com.example.controller;
 import com.example.entity.RestBean;
 import com.example.service.ImageService;
 import io.minio.errors.ErrorResponseException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,12 +16,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
+@Tag(name="图片获取")
 public class ObjectController { //图片获取controller
 
     @Resource
     ImageService service;
 
     @GetMapping("/images/**")
+    @Operation(summary = "获取图片")
     public void imageFetch(HttpServletRequest request, HttpServletResponse response) throws Exception {
         response.setHeader("Content-Type", "image/jpg");
         this.fetchImage(request, response);
