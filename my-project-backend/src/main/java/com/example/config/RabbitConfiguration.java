@@ -15,32 +15,10 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class RabbitConfiguration {
-
-    @Bean
-    public Jackson2JsonMessageConverter messageConverter() {
-        return new Jackson2JsonMessageConverter();
-    }
-
-    @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
-        RabbitTemplate template = new RabbitTemplate(connectionFactory);
-        template.setMessageConverter(messageConverter());  // 设置 JSON 转换器
-        return template;
-    }
-
-    @Bean
-    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
-        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
-        factory.setMessageConverter(messageConverter());  // 让监听器也支持 JSON
-        return factory;
-    }
-
     @Bean("mailQueue")
     public Queue queue(){
         return QueueBuilder
                 .durable("mail")
                 .build();
     }
-
 }
