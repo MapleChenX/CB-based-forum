@@ -13,6 +13,7 @@ app = FastAPI()
 
 
 class TextInput(BaseModel):
+    id: str
     title: str
     content: str
 
@@ -31,6 +32,7 @@ async def say_hello(name: str):
 async def get_text_vector(input_data: TextInput):
     # 从请求中获取标题和内容
     title = input_data.title
+    print("当前处理id:", input_data.id, "；标题：", title)
     content = input_data.content
 
     # 计算向量
@@ -56,3 +58,5 @@ def text_to_vector(text):
     # 获取 [CLS] 位置的向量表示（768 维）
     vector = outputs.last_hidden_state[:, 0, :].squeeze().numpy()
     return vector.tolist()
+
+#uvicorn main:app

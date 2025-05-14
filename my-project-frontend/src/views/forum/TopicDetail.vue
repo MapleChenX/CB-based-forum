@@ -73,13 +73,17 @@ const getSimilarRecommendationV2 = () => {
     })
 }
 
-const init = () => get(`api/forum/topic?tid=${tid.value}`, data => {
-    topic.data = data // 加载帖子内容
-    topic.like = data.interact.like
-    topic.collect = data.interact.collect
-    loadComments(1) // 加载评论
-    getSimilarRecommendationV2() // 加载相关推荐
-})
+const init = () => {
+    if (tid.value) {
+        get(`api/forum/topic?tid=${tid.value}`, data => {
+            topic.data = data // 加载帖子内容
+            topic.like = data.interact.like
+            topic.collect = data.interact.collect
+            loadComments(1) // 加载评论
+            getSimilarRecommendationV2() // 加载相关推荐
+        })
+    }
+}
 
 onMounted(() => {
     init()

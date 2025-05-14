@@ -44,11 +44,11 @@ public class ESServiceImpl implements ESService {
     public void insertVector(String content) {
         ESPostVector ESPostVector = JSONObject.parseObject(content, ESPostVector.class);
         try {
-            if (isExists(ESPostVector.getId())) {
+            if (isExists(String.valueOf(ESPostVector.getId()))) {
                 System.out.println("ES中已存在该id，不插入！" + ESPostVector.getId());
                 return;
             }
-            insertPostWithId(ESPostVector.getId(), ESPostVector.getTitle(), ESPostVector.getContent(), ESPostVector.getEmbedding());
+            insertPostWithId(String.valueOf(ESPostVector.getId()), ESPostVector.getTitle(), ESPostVector.getContent(), ESPostVector.getEmbedding());
         } catch (IOException e) {
             System.out.println("insert into es wrong! id: " + ESPostVector.getId());
         }
@@ -115,7 +115,7 @@ public class ESServiceImpl implements ESService {
         try {
             client.index(i -> i
                     .index(Const.ES_INDEX_FORUM_POSTS)
-                    .id(one.getId())
+                    .id(String.valueOf(one.getId()))
                     .document(one)
             );
             System.out.println("ES插入成功，id：" + one.getId());

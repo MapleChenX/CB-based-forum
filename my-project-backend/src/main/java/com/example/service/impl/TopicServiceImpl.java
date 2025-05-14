@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.common.Const;
 import com.example.entity.ESPostVector;
+import com.example.entity.TopicVector;
 import com.example.entity.dto.*;
 import com.example.entity.vo.request.AddCommentVO;
 import com.example.entity.vo.request.TopicCreateVO;
@@ -75,6 +76,9 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
     @Lazy
     RabbitMQUtil mqUtil;
 
+    @Resource
+    SnowflakeIdGenerator snowflakeIdGenerator;
+
     private Set<Integer> types = null;
 
     // @PostConstruct 是一个Java注解，它表示该注解修饰的方法会在依赖注入完成后，且在类的构造函数执行后立即执行。这个注解通常用于进行一些初始化操作。
@@ -103,15 +107,20 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         if (!flowUtils.limitPeriodCounterCheck(key, 100, 600))
             return "发文频繁，请稍后再试！";
         Topic topic = new Topic();
-        Long customId = UUID.randomUUID().getMostSignificantBits();
-        topic.setId(customId.intValue());  // 设置自定义 ID
+
+        String idStr = String.valueOf(snowflakeIdGenerator.nextId());
+        String shortId = idStr.substring(idStr.length() - 9); // 取最后 9 位
+        topic.setId(Integer.valueOf(shortId));  // 取 customId 的低 32 位
         BeanUtils.copyProperties(vo, topic);
         topic.setContent(vo.getContent().toJSONString());
         topic.setUid(uid);
         topic.setTime(new Date());
         if (this.save(topic)) {
+            TopicVector topicVector = new TopicVector();
+            BeanUtils.copyProperties(topic, topicVector);
             // 同步到es
-            mqUtil.sendMessage(Const.FORUM_POSTS_2_ES_MQ, topic);
+            mqUtil.sendMessage(Const.FORUM_POSTS_2_ES_MQ, topicVector);
+            log.info("文章发送es成功，id:{}", topic.getId());
             cacheUtils.deleteCachePattern(Const.FORUM_TOPIC_PREVIEW_CACHE + "*");
             return null;
         } else {
@@ -121,15 +130,19 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
 
     // ES同步
     @RabbitListener(queues = Const.FORUM_POSTS_2_ES_MQ)
-    public void saveToEs(Topic topic) {
+    public void saveToEs(String item) {
+        TopicVector topic = JSONObject.parseObject(item, TopicVector.class);
+        log.info("文章接收成功，向量计算 id:{}", topic.getId());
         topic.setContent(PostContentConverter.convert(topic.getContent()));
 
         ESPostVector esPostVector = new ESPostVector();
         BeanUtils.copyProperties(topic, esPostVector);
 
+        // python服务计算词向量
         WebClient webClient = WebClient.create("http://127.0.0.1:8000");
 
         Map<String, String> request = new HashMap<>();
+        request.put("id", String.valueOf(topic.getId()));
         request.put("title", topic.getTitle());
         request.put("content", topic.getContent());
 
@@ -141,13 +154,14 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
                 .block();
 
         if (resp != null) {
+            log.info("id: " + esPostVector.getId() + "词向量插入ES成功");
             esPostVector.setEmbedding(resp.getVector());
         }
 
         try {
             elasticsearchClient.index(i -> i
                     .index(Const.ES_INDEX_FORUM_POSTS)
-                    .id(esPostVector.getId())
+                    .id(String.valueOf(esPostVector.getId()))
                     .document(esPostVector)
             );
         } catch (IOException e) {
@@ -170,7 +184,7 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         );
 
         // 同步到 ES
-        Topic topic = new Topic();
+        TopicVector topic = new TopicVector();
         topic.setId(vo.getId());
         topic.setTitle(vo.getTitle());
         topic.setContent(vo.getContent().toJSONString());
@@ -286,9 +300,9 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         Page<Topic> page = Page.of(pageNumber, 10);
         // 根据类型查询
         if (type == 0) {
-            baseMapper.selectPage(page, Wrappers.<Topic>query().orderByDesc("time"));
+            baseMapper.selectPage(page, Wrappers.<Topic>query().eq("is_del", 0).orderByDesc("time"));
         } else {
-            baseMapper.selectPage(page, Wrappers.<Topic>query().eq("type", type).orderByDesc("time"));
+            baseMapper.selectPage(page, Wrappers.<Topic>query().eq("is_del", 0).eq("type", type).orderByDesc("time"));
         }
         // 获取分页数据
         List<Topic> topics = page.getRecords();
@@ -458,9 +472,10 @@ public class TopicServiceImpl extends ServiceImpl<TopicMapper, Topic> implements
         }
 
         List<Integer> postIds = searchSimilarPostIds(keyword, page, offset);
+        if (postIds.isEmpty()) Collections.emptyList();
 
         List<Topic> topics = baseMapper.selectList(Wrappers.<Topic>query().in("id", postIds));
-        if (topics.isEmpty()) return null;
+        if (topics.isEmpty()) Collections.emptyList();
 
         return topics.stream().map(this::resolveToPreview).toList();
     }

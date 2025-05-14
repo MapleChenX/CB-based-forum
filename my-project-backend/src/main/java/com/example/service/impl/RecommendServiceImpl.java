@@ -65,6 +65,7 @@ public class RecommendServiceImpl implements RecommendService {
         ArrayList<TopicPreviewVO> res = new ArrayList<>();
         for (String postId : RecommendedPostIds) {
             Topic topic = topicMapper.selectById(postId);
+            if (topic == null) continue;
             TopicPreviewVO topicPreviewVO = topicService.resolveToPreview(topic);
             res.add(topicPreviewVO);
         }
