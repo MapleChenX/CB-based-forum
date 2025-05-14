@@ -10,7 +10,7 @@ import {
     ChatDotSquare, Check, Collection, Comment, DataLine,
     Document, Files,
     Location, Lock, Message, Monitor,
-    Notification, Operation,
+    Notification, Operation, Picture,
     Position,
     School, Search,
     Umbrella, User
@@ -131,7 +131,7 @@ const toSearch = () => {
                         <el-menu
                                 router
                                 :default-active="$route.path"
-                                :default-openeds="['1', '2', '3']"
+                                :default-openeds="['1', '2']"
                                 style="min-height: calc(100vh - 55px)">
                             <el-sub-menu index="1">
                                 <template #title>
@@ -148,89 +148,49 @@ const toSearch = () => {
                                         帖子广场
                                     </template>
                                 </el-menu-item>
-                                <el-menu-item>
-                                    <template #title>
-                                        <el-icon>
-                                            <Bell/>
-                                        </el-icon>
-                                        失物招领
-                                    </template>
-                                </el-menu-item>
-                                <el-menu-item>
-                                    <template #title>
-                                        <el-icon>
-                                            <Notification/>
-                                        </el-icon>
-                                        校园活动
-                                    </template>
-                                </el-menu-item>
-                                <el-menu-item>
-                                    <template #title>
-                                        <el-icon>
-                                            <Umbrella/>
-                                        </el-icon>
-                                        表白墙
-                                    </template>
-                                </el-menu-item>
-                                <el-menu-item>
-                                    <template #title>
-                                        <el-icon>
-                                            <School/>
-                                        </el-icon>
-                                        海文考研
-                                        <el-tag style="margin-left: 10px" size="small">合作机构</el-tag>
-                                    </template>
-                                </el-menu-item>
+<!--                                <el-menu-item>-->
+<!--                                    <template #title>-->
+<!--                                        <el-icon>-->
+<!--                                            <Bell/>-->
+<!--                                        </el-icon>-->
+<!--                                        日常闲聊-->
+<!--                                    </template>-->
+<!--                                </el-menu-item>-->
+<!--                                <el-menu-item>-->
+<!--                                    <template #title>-->
+<!--                                        <el-icon>-->
+<!--                                            <Notification/>-->
+<!--                                        </el-icon>-->
+<!--                                        真诚交友-->
+<!--                                    </template>-->
+<!--                                </el-menu-item>-->
+<!--                                <el-menu-item>-->
+<!--                                    <template #title>-->
+<!--                                        <el-icon>-->
+<!--                                            <Umbrella/>-->
+<!--                                        </el-icon>-->
+<!--                                        问题反馈-->
+<!--                                    </template>-->
+<!--                                </el-menu-item>-->
+<!--                                <el-menu-item>-->
+<!--                                    <template #title>-->
+<!--                                        <el-icon>-->
+<!--                                            <School/>-->
+<!--                                        </el-icon>-->
+<!--                                        恋爱官宣-->
+<!--                                    </template>-->
+<!--                                </el-menu-item>-->
+<!--                                <el-menu-item>-->
+<!--                                    <template #title>-->
+<!--                                        <el-icon>-->
+<!--                                            <Picture/>-->
+<!--                                        </el-icon>-->
+<!--                                        踩坑记录-->
+<!--                                    </template>-->
+<!--                                </el-menu-item>-->
                             </el-sub-menu>
+
                             <el-sub-menu index="2">
-                                <template #title>
-                                    <el-icon>
-                                        <Position/>
-                                    </el-icon>
-                                    <span><b>探索与发现</b></span>
-                                </template>
-                                <el-menu-item>
-                                    <template #title>
-                                        <el-icon>
-                                            <Document/>
-                                        </el-icon>
-                                        成绩查询
-                                    </template>
-                                </el-menu-item>
-                                <el-menu-item>
-                                    <template #title>
-                                        <el-icon>
-                                            <Files/>
-                                        </el-icon>
-                                        班级课程表
-                                    </template>
-                                </el-menu-item>
-                                <el-menu-item>
-                                    <template #title>
-                                        <el-icon>
-                                            <Monitor/>
-                                        </el-icon>
-                                        教务通知
-                                    </template>
-                                </el-menu-item>
-                                <el-menu-item>
-                                    <template #title>
-                                        <el-icon>
-                                            <Collection/>
-                                        </el-icon>
-                                        在线图书馆
-                                    </template>
-                                </el-menu-item>
-                                <el-menu-item>
-                                    <template #title>
-                                        <el-icon>
-                                            <DataLine/>
-                                        </el-icon>
-                                        预约教室
-                                    </template>
-                                </el-menu-item>
-                            </el-sub-menu>
-                            <el-sub-menu index="3">
                                 <template #title>
                                     <el-icon>
                                         <Operation/>
