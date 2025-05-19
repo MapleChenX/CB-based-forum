@@ -13,7 +13,7 @@ import {
   Microphone, CircleCheck, Star, FolderOpened, ArrowRightBold, Close, Top, Bottom
 } from "@element-plus/icons-vue";
 import Weather from "@/components/Weather.vue";
-import {computed, reactive, ref, watch} from "vue";
+import {onMounted, onUnmounted, computed, reactive, ref, watch} from "vue";
 import {get} from "@/net";
 import {ElMessage} from "element-plus";
 import TopicEditor from "@/components/TopicEditor.vue";
@@ -22,6 +22,7 @@ import ColorDot from "@/components/ColorDot.vue";
 import router from "@/router";
 import TopicTag from "@/components/TopicTag.vue";
 import TopicCollectList from "@/components/TopicCollectList.vue";
+import emitter from "@/utils/mitt";
 
 const store = useStore()
 
@@ -139,6 +140,18 @@ function downTop(tid){
     router.go(0)
   })
 }
+
+const handleCategoryChange = (id) => {
+    topics.type = id
+}
+
+onMounted(() => {
+    emitter.on('change-category', handleCategoryChange)
+})
+
+onUnmounted(() => {
+    emitter.off('change-category', handleCategoryChange)
+})
 </script>
 
 <template>

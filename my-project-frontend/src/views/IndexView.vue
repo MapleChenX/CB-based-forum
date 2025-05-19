@@ -16,6 +16,7 @@ import {
     Umbrella, User
 } from "@element-plus/icons-vue";
 import LightCard from "@/components/LightCard.vue";
+import emitter from "@/utils/mitt";
 
 const store = useStore()
 const show = ref(false)
@@ -55,6 +56,10 @@ const toSearch = () => {
     if (searchInput.text) {
         router.push(`/index/search/${searchInput.text}`)
     }
+}
+
+function changeCategory(id) {
+    emitter.emit('change-category', id)
 }
 </script>
 
@@ -140,7 +145,7 @@ const toSearch = () => {
                                     </el-icon>
                                     <span><b>校园论坛</b></span>
                                 </template>
-                                <el-menu-item index="/index">
+                                <el-menu-item index="/index" @click="emitter.emit('change-category', 0)">
                                     <template #title>
                                         <el-icon>
                                             <ChatDotSquare/>
@@ -148,46 +153,46 @@ const toSearch = () => {
                                         帖子广场
                                     </template>
                                 </el-menu-item>
-<!--                                <el-menu-item>-->
-<!--                                    <template #title>-->
-<!--                                        <el-icon>-->
-<!--                                            <Bell/>-->
-<!--                                        </el-icon>-->
-<!--                                        日常闲聊-->
-<!--                                    </template>-->
-<!--                                </el-menu-item>-->
-<!--                                <el-menu-item>-->
-<!--                                    <template #title>-->
-<!--                                        <el-icon>-->
-<!--                                            <Notification/>-->
-<!--                                        </el-icon>-->
-<!--                                        真诚交友-->
-<!--                                    </template>-->
-<!--                                </el-menu-item>-->
-<!--                                <el-menu-item>-->
-<!--                                    <template #title>-->
-<!--                                        <el-icon>-->
-<!--                                            <Umbrella/>-->
-<!--                                        </el-icon>-->
-<!--                                        问题反馈-->
-<!--                                    </template>-->
-<!--                                </el-menu-item>-->
-<!--                                <el-menu-item>-->
-<!--                                    <template #title>-->
-<!--                                        <el-icon>-->
-<!--                                            <School/>-->
-<!--                                        </el-icon>-->
-<!--                                        恋爱官宣-->
-<!--                                    </template>-->
-<!--                                </el-menu-item>-->
-<!--                                <el-menu-item>-->
-<!--                                    <template #title>-->
-<!--                                        <el-icon>-->
-<!--                                            <Picture/>-->
-<!--                                        </el-icon>-->
-<!--                                        踩坑记录-->
-<!--                                    </template>-->
-<!--                                </el-menu-item>-->
+                                <el-menu-item @click="emitter.emit('change-category', 1)">
+                                    <template #title>
+                                        <el-icon>
+                                            <Bell/>
+                                        </el-icon>
+                                        日常闲聊
+                                    </template>
+                                </el-menu-item>
+                                <el-menu-item @click="emitter.emit('change-category', 2)">
+                                    <template #title>
+                                        <el-icon>
+                                            <Notification/>
+                                        </el-icon>
+                                        真诚交友
+                                    </template>
+                                </el-menu-item>
+                                <el-menu-item @click="emitter.emit('change-category', 3)">
+                                    <template #title>
+                                        <el-icon>
+                                            <Umbrella/>
+                                        </el-icon>
+                                        问题反馈
+                                    </template>
+                                </el-menu-item>
+                                <el-menu-item @click="emitter.emit('change-category', 4)">
+                                    <template #title>
+                                        <el-icon>
+                                            <School/>
+                                        </el-icon>
+                                        恋爱官宣
+                                    </template>
+                                </el-menu-item>
+                                <el-menu-item @click="emitter.emit('change-category', 5)">
+                                    <template #title>
+                                        <el-icon>
+                                            <Picture/>
+                                        </el-icon>
+                                        踩坑记录
+                                    </template>
+                                </el-menu-item>
                             </el-sub-menu>
 
                             <el-sub-menu index="2">
